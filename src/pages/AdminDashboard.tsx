@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Plus,
@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { db } from '../db/dexie';
 import { syncSongsWithRemote, softDeleteSong, saveSong } from '../db/sync';
-import { COMMON_KEYS, extractCifraClubKey, cleanCifraClubArtifacts } from '../services/chordEngine';
+import { COMMON_KEYS, extractCifraClubKey, cleanCifraClubArtifacts, detectFormat } from '../services/chordEngine';
 import { ChordViewer } from '../components/ChordViewer';
 import type { Song } from '../types';
 
@@ -34,9 +34,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [originalKey, setOriginalKey] = useState('C');
-  const [format, setFormat] = useState<'chords-over-lyrics' | 'chordpro'>('chords-over-lyrics');
+  const [keyMode, setKeyMode] = useState<'auto' | 'manual'>('auto');
+  const [formatMode, setFormatMode] = useState<'auto' | 'chords-over-lyrics' | 'chordpro'>('auto');
   const [content, setContent] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+
+  const detectedKey = useMemo(() => extractCifraClubKey(content), [content]);
+  const resolvedKey = useMemo(() => {
+    if (keyMode === 'auto' && detectedKey && COMMON_KEYS.includes(detectedKey)) {
+      return detectedKey;
+    }
+    return originalKey;
+  }, [keyMode, detectedKey, originalKey]);
+
+  const detectedFormat = useMemo(() => detectFormat(content), [content]);
+  const resolvedFormat = formatMode === 'auto' ? detectedFormat : formatMode;
 
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
@@ -63,7 +75,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setTitle('');
     setArtist('');
     setOriginalKey('C');
-    setFormat('chords-over-lyrics');
+    setKeyMode('auto');
+    setFormatMode('auto');
     setContent('');
     setShowPreview(false);
     setIsEditing(true);
@@ -74,7 +87,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setTitle(song.title);
     setArtist(song.artist || '');
     setOriginalKey(song.originalKey);
-    setFormat(song.format);
+    setKeyMode('manual');
+    setFormatMode(song.format);
     setContent(song.content);
     setShowPreview(false);
     setIsEditing(true);
@@ -87,16 +101,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
-    const detectedKey = extractCifraClubKey(content);
-    const keyToSave = (detectedKey && COMMON_KEYS.includes(detectedKey)) ? detectedKey : originalKey;
     const sanitizedContent = cleanCifraClubArtifacts(content);
 
     const songData: Song = {
       id: editingId || `song_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       title: title.trim(),
       artist: artist.trim() || undefined,
-      originalKey: keyToSave,
-      format,
+      originalKey: resolvedKey,
+      format: resolvedFormat,
       content: sanitizedContent,
       createdAt: editingId ? (songs.find((s) => s.id === editingId)?.createdAt || Date.now()) : Date.now(),
       updatedAt: Date.now(),
@@ -338,31 +350,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     Tom Original *
                   </label>
                   <select
-                    value={originalKey}
-                    onChange={(e) => setOriginalKey(e.target.value)}
+                    value={keyMode === 'auto' ? 'auto' : originalKey}
+                    onChange={(e) => {
+                      if (e.target.value === 'auto') {
+                        setKeyMode('auto');
+                      } else {
+                        setKeyMode('manual');
+                        setOriginalKey(e.target.value);
+                      }
+                    }}
                     className="w-full px-3.5 py-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 rounded-2xl text-base sm:text-sm text-[var(--color-text-primary)] font-mono font-bold focus:outline-none focus:border-[var(--color-accent)]"
                   >
-                    {COMMON_KEYS.map((k) => (
-                      <option key={k} value={k}>
-                        {k}
-                      </option>
-                    ))}
+                    <option value="auto">
+                      {detectedKey ? `Auto: Detectado (${detectedKey})` : 'Auto: Detectar do Texto'}
+                    </option>
+                    <optgroup label="Seleção Manual (Fallback)">
+                      {COMMON_KEYS.map((k) => (
+                        <option key={k} value={k}>
+                          {k}
+                        </option>
+                      ))}
+                    </optgroup>
                   </select>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    Formato de Cifra
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                      Formato de Cifra
+                    </label>
+                    {formatMode === 'auto' && (
+                      <span className="text-[10px] font-mono text-[var(--color-accent)] font-semibold">
+                        Auto: {detectedFormat === 'chordpro' ? 'ChordPro' : 'Duas Linhas'}
+                      </span>
+                    )}
+                  </div>
                   <select
-                    value={format}
-                    onChange={(e) => setFormat(e.target.value as any)}
+                    value={formatMode}
+                    onChange={(e) => setFormatMode(e.target.value as any)}
                     className="w-full px-3.5 py-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 rounded-2xl text-base sm:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
                   >
-                    <option value="chords-over-lyrics">
-                      Duas Linhas (Acordes acima da letra)
-                    </option>
-                    <option value="chordpro">ChordPro ([C]Acordes entre colchetes)</option>
+                    <option value="auto">Auto (Detectar Cifra Club / TXT / ChordPro)</option>
+                    <option value="chords-over-lyrics">Manual: Duas Linhas (Acordes acima da letra)</option>
+                    <option value="chordpro">Manual: ChordPro ([C]Acordes entre colchetes)</option>
                   </select>
                 </div>
               </div>
@@ -372,14 +402,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
                     Conteúdo da Cifra *
                   </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowPreview(!showPreview)}
-                    className="flex items-center gap-1 text-xs font-semibold text-[#C08552] hover:text-[var(--color-text-primary)]"
-                  >
-                    <Eye className="w-3.5 h-3.5" />
-                    <span>{showPreview ? 'Ocultar Preview' : 'Visualizar Preview'}</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const cleaned = cleanCifraClubArtifacts(content);
+                        setContent(cleaned);
+                      }}
+                      className="flex items-center gap-1 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+                      title="Remover duplicações e resíduos do Cifra Club"
+                    >
+                      <RefreshCw className="w-3.5 h-3.5" />
+                      <span>Limpar Cifra</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowPreview(!showPreview)}
+                      className="flex items-center gap-1 text-xs font-semibold text-[#C08552] hover:text-[var(--color-text-primary)]"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>{showPreview ? 'Ocultar Preview' : 'Visualizar Preview'}</span>
+                    </button>
+                  </div>
                 </div>
 
                 <textarea
@@ -412,15 +456,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       id: 'preview',
                       title,
                       artist,
-                      originalKey,
-                      format,
+                      originalKey: resolvedKey,
+                      format: resolvedFormat,
                       content,
                       createdAt: 0,
                       updatedAt: 0,
                       isDeleted: false,
                       deletedAt: null
                     }}
-                    currentKey={originalKey}
+                    currentKey={resolvedKey}
                     fontSize={16}
                   />
                 </div>
