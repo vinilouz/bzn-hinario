@@ -55,6 +55,29 @@ export function detectFormat(content: string): 'chordpro' | 'chords-over-lyrics'
   return 'chords-over-lyrics';
 }
 
+export function extractCifraClubKey(content: string): string | null {
+  const match = content.match(/^\s*Tom:\s*([A-G][#b]?m?)/im);
+  return match ? match[1] : null;
+}
+
+export function preprocessChordSheet(raw: string): string {
+  if (!raw) return '';
+  let text = raw;
+
+  text = text.replace(/^(\s*\[[^\]]+\])\s+([A-G][^\n]*)$/gm, '$1\n$2');
+  text = text.replace(/^\s*Tom:\s*[A-G][#b]?m?\s*$/gim, '');
+  text = text.replace(/^\s*(?:Capotraste|Afinação|Intro):\s*.*$/gim, '');
+  text = text.replace(/([A-G][#b]?)7M(\b|\/)/g, '$1maj7$2');
+  text = text.replace(/([A-G][#b]?)7\+(\b|\/)/g, '$1maj7$2');
+
+  return text;
+}
+
+export function postprocessHtml(html: string): string {
+  if (!html) return '';
+  return html.replace(/(class="chord">[^<]*?)ma(?:j)?7/g, '$17M');
+}
+
 const cowParser = new ChordSheetJS.ChordsOverWordsParser();
 const cpParser = new ChordSheetJS.ChordProParser();
 const htmlFormatter = new ChordSheetJS.HtmlDivFormatter();
@@ -66,12 +89,15 @@ export function renderChordSheet(
 ): string {
   if (!content) return '';
   try {
-    const parser = format === 'chordpro' ? cpParser : cowParser;
-    let song = parser.parse(content);
+    const isChordPro = format === 'chordpro';
+    const parser = isChordPro ? cpParser : cowParser;
+    const cleanContent = isChordPro ? content : preprocessChordSheet(content);
+    let song = parser.parse(cleanContent);
     if (semitones !== 0) {
       song = song.transpose(semitones);
     }
-    return htmlFormatter.format(song);
+    const html = htmlFormatter.format(song);
+    return isChordPro ? html : postprocessHtml(html);
   } catch (error) {
     console.error('Chord render error:', error);
     return `<pre class="whitespace-pre-wrap font-mono text-[var(--color-text-primary)]">${content}</pre>`;

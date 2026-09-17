@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { db } from '../db/dexie';
 import { syncSongsWithRemote, softDeleteSong, saveSong } from '../db/sync';
-import { COMMON_KEYS } from '../services/chordEngine';
+import { COMMON_KEYS, extractCifraClubKey } from '../services/chordEngine';
 import { ChordViewer } from '../components/ChordViewer';
 import type { Song } from '../types';
 
@@ -382,7 +382,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   rows={10}
                   required
                   value={content}
-                  onChange={(e) => setContent(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setContent(val);
+                    const detected = extractCifraClubKey(val);
+                    if (detected && COMMON_KEYS.includes(detected)) {
+                      setOriginalKey(detected);
+                    }
+                  }}
                   placeholder="Cole aqui a cifra exatamente como no Word ou TXT..."
                   className="w-full px-3.5 py-3 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 rounded-2xl text-base sm:text-sm font-mono text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent)] whitespace-pre"
                 />
