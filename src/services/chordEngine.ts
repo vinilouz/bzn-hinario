@@ -60,9 +60,93 @@ export function extractCifraClubKey(content: string): string | null {
   return match ? match[1] : null;
 }
 
+export function cleanCifraClubArtifacts(text: string): string {
+  if (!text) return '';
+  const lines = text.split('\n');
+  const result: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    const chordMatch = line.match(/^">\s*([A-G][^\n]*)$/);
+    if (chordMatch) {
+      const chord = chordMatch[1].trim();
+      const nextLine = lines[i + 1] ? lines[i + 1].trim() : '';
+
+      let duplicateIdx = -1;
+      for (let j = result.length - 1; j >= Math.max(0, result.length - 6); j--) {
+        if (result[j].trim() === nextLine && nextLine.length > 0) {
+          duplicateIdx = j;
+          break;
+        }
+      }
+
+      if (duplicateIdx !== -1) {
+        const chordsLineIdx = duplicateIdx - 1;
+        if (chordsLineIdx >= 0 && result[chordsLineIdx].trim().length > 0) {
+          result[chordsLineIdx] = result[chordsLineIdx].trimEnd() + '  ' + chord;
+        } else if (chordsLineIdx >= 0) {
+          result[chordsLineIdx] = chord;
+        } else {
+          result.splice(duplicateIdx, 0, chord);
+        }
+        i++;
+        continue;
+      }
+
+      let prevHeaderIdx = -1;
+      for (let j = result.length - 1; j >= Math.max(0, result.length - 3); j--) {
+        if (result[j].trim().startsWith('[') && result[j].trim().endsWith(']')) {
+          prevHeaderIdx = j;
+          break;
+        }
+      }
+
+      if (prevHeaderIdx !== -1) {
+        result.push(chord);
+        let lookAhead = i + 1;
+        while (lookAhead < lines.length && lines[lookAhead].trim() === '') {
+          lookAhead++;
+        }
+        if (lookAhead < lines.length && lines[lookAhead].trim() === result[prevHeaderIdx].trim()) {
+          i = lookAhead;
+        }
+        continue;
+      }
+
+      result.push(chord);
+      continue;
+    }
+
+    result.push(line);
+  }
+
+  const deduped: string[] = [];
+  let lastHeader = '';
+  for (let i = 0; i < result.length; i++) {
+    const rawLine = result[i];
+    const trimmed = rawLine.trim();
+    if (trimmed.startsWith('[') && trimmed.endsWith(']')) {
+      if (trimmed === lastHeader) {
+        continue;
+      }
+      lastHeader = trimmed;
+    } else if (trimmed.length > 0) {
+      lastHeader = '';
+    }
+
+    if (trimmed === '' && deduped.length > 0 && deduped[deduped.length - 1].trim() === '') {
+      continue;
+    }
+    deduped.push(rawLine);
+  }
+
+  return deduped.join('\n');
+}
+
 export function preprocessChordSheet(raw: string): string {
   if (!raw) return '';
-  let text = raw;
+  let text = cleanCifraClubArtifacts(raw);
 
   text = text.replace(/^(\s*\[[^\]]+\])\s+([A-G][^\n]*)$/gm, '$1\n$2');
   text = text.replace(/^\s*Tom:\s*[A-G][#b]?m?\s*$/gim, '');

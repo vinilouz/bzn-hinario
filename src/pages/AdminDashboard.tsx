@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { db } from '../db/dexie';
 import { syncSongsWithRemote, softDeleteSong, saveSong } from '../db/sync';
-import { COMMON_KEYS, extractCifraClubKey } from '../services/chordEngine';
+import { COMMON_KEYS, extractCifraClubKey, cleanCifraClubArtifacts } from '../services/chordEngine';
 import { ChordViewer } from '../components/ChordViewer';
 import type { Song } from '../types';
 
@@ -87,13 +87,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       return;
     }
 
+    const detectedKey = extractCifraClubKey(content);
+    const keyToSave = (detectedKey && COMMON_KEYS.includes(detectedKey)) ? detectedKey : originalKey;
+    const sanitizedContent = cleanCifraClubArtifacts(content);
+
     const songData: Song = {
       id: editingId || `song_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       title: title.trim(),
       artist: artist.trim() || undefined,
-      originalKey,
+      originalKey: keyToSave,
       format,
-      content,
+      content: sanitizedContent,
       createdAt: editingId ? (songs.find((s) => s.id === editingId)?.createdAt || Date.now()) : Date.now(),
       updatedAt: Date.now(),
       isDeleted: false,
@@ -383,7 +387,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   required
                   value={content}
                   onChange={(e) => {
-                    const val = e.target.value;
+                    let val = e.target.value;
+                    if (val.includes('">')) {
+                      val = cleanCifraClubArtifacts(val);
+                    }
                     setContent(val);
                     const detected = extractCifraClubKey(val);
                     if (detected && COMMON_KEYS.includes(detected)) {
