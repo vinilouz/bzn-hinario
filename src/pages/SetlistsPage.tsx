@@ -1,3 +1,4 @@
+import { useDragScroll } from "../hooks/useDragScroll";
 import React, { useState } from "react";
 import {
   Star,
@@ -43,6 +44,7 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
   } = useSetlists();
 
   const [isAddingList, setIsAddingList] = useState(false);
+  const { ref: setlistsScrollRef, handleClickCapture: handleSetlistClickCapture } = useDragScroll<HTMLDivElement>();
   const [newListName, setNewListName] = useState("");
   const [editingListId, setEditingListId] = useState<string | null>(null);
   const [editListName, setEditListName] = useState("");
@@ -162,7 +164,7 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
 
       {/* Setlists Segmented Control */}
       <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="flex items-center gap-2 horizontal-touch-scroll py-1 px-1 scrollbar-none apple-scroll-mask apple-scroll-mask-sm-none">
+        <div ref={setlistsScrollRef} onClickCapture={handleSetlistClickCapture} className="flex items-center gap-2 horizontal-touch-scroll py-1 px-1 scrollbar-none apple-scroll-mask apple-scroll-mask-sm-none select-none">
         <div className="flex items-center gap-1.5 p-1 bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-full shadow-sm">
           {setlists.map((s) => {
             const isActive = s.id === activeSetlistId;

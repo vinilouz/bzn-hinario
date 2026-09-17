@@ -132,9 +132,14 @@
 
 .horizontal-touch-scroll {
   overflow-x: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
+  overscroll-behavior-x: contain;
+  touch-action: pan-x pan-y;
   -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+  cursor: grab;
+}
+.horizontal-touch-scroll:active {
+  cursor: grabbing;
 }
 
 .scrollbar-none::-webkit-scrollbar {

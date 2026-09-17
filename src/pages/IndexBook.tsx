@@ -1,3 +1,4 @@
+import { useDragScroll } from "../hooks/useDragScroll";
 import React, { useState, useEffect, useMemo } from "react";
 import { Search, BookOpen, Star, X, Music } from "lucide-react";
 import { db } from "../db/dexie";
@@ -15,6 +16,7 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
   const [songs, setSongs] = useState<Song[]>([]);
   const [query, setQuery] = useState("");
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
+  const { ref: alphabetRef, handleClickCapture } = useDragScroll<HTMLDivElement>();
 
   useEffect(() => {
     db.songs
@@ -117,7 +119,11 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
 
       {/* Alphabet Scrubber */}
       <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
-        <div className="flex items-center gap-1.5 horizontal-touch-scroll py-1 px-1 scrollbar-none apple-scroll-mask apple-scroll-mask-sm-none">
+        <div
+          ref={alphabetRef}
+          onClickCapture={handleClickCapture}
+          className="flex items-center gap-1.5 horizontal-touch-scroll py-1 px-1 scrollbar-none apple-scroll-mask apple-scroll-mask-sm-none select-none"
+        >
           <button
             onClick={() => setSelectedLetter(null)}
             className={`h-8 px-3.5 flex items-center justify-center rounded-full text-xs font-bold shrink-0 emil-press ${
