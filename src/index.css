@@ -1,0 +1,268 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    color-scheme: light;
+    /* Cult Café - Light Linen Paper */
+    --color-bg-page: #FBF8F4;
+    --color-bg-card: #FFFFFF;
+    --color-bg-subtle: #F2EBE1;
+    --color-text-primary: #231815;
+    --color-text-secondary: #7A6658;
+    --color-accent: #B8733E;
+    --color-accent-hover: #A06232;
+    --color-accent-contrast: #FFFFFF;
+    --color-border: #8C5A3C;
+    --color-border-subtle: rgba(140, 90, 60, 0.14);
+    --color-chord: #9C5B2F;
+
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+    --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  [data-theme="dark"] {
+    color-scheme: dark;
+    /* Cult Café - Dark Roast Espresso Bar */
+    --color-bg-page: #12100E;
+    --color-bg-card: #1A1614;
+    --color-bg-subtle: #26201D;
+    --color-text-primary: #F5EFEB;
+    --color-text-secondary: #A39385;
+    --color-accent: #D49561;
+    --color-accent-hover: #E2A674;
+    --color-accent-contrast: #12100E;
+    --color-border: #6B5344;
+    --color-border-subtle: rgba(212, 149, 97, 0.14);
+    --color-chord: #E8A870;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior: none;
+  }
+
+  body {
+    background-color: var(--color-bg-page);
+    color: var(--color-text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior: none;
+    transition: background-color 150ms var(--ease-out), color 150ms var(--ease-out);
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  }
+
+  button, a, [role="button"], [role="tab"], .tab, .chip {
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+
+  input, textarea, [contenteditable="true"], .selectable-text {
+    user-select: text;
+    -webkit-user-select: text;
+  }
+
+  .tnum {
+    font-feature-settings: "tnum";
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.apple-glass {
+  background: color-mix(in srgb, var(--color-bg-card) 85%, transparent);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--color-border-subtle);
+}
+
+.emil-press {
+  transition: transform 120ms var(--ease-out), opacity 120ms var(--ease-out), background-color 120ms var(--ease-out), border-color 120ms var(--ease-out);
+  will-change: transform;
+}
+
+.emil-press:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .emil-hover-lift:hover {
+    transform: translateY(-1px);
+    transition: transform 150ms var(--ease-out), box-shadow 150ms var(--ease-out);
+  }
+}
+
+.safe-top {
+  padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+}
+
+.safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+.safe-bottom-pad {
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.sheet-scroll, .modal-scroll {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.horizontal-touch-scroll {
+  overflow-x: auto;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+@keyframes ui-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-ui-fade {
+  animation: ui-fade-in 160ms var(--ease-out) forwards;
+}
+
+.animate-modal-pop {
+  animation: modal-pop 180ms var(--ease-spring) forwards;
+}
+
+.chord-sheet {
+  font-family: inherit;
+  line-height: 1.4;
+}
+
+.chord-sheet .paragraph {
+  break-inside: avoid-column;
+  margin-bottom: 1.75rem;
+}
+
+.chord-sheet-2col {
+  column-count: 1;
+}
+
+@media (min-width: 768px) {
+  .chord-sheet-2col {
+    column-count: 2;
+    column-gap: 3rem;
+    column-rule: 1px solid var(--color-border-subtle);
+  }
+}
+
+.chord-sheet .row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  margin-bottom: 0.6rem;
+  line-height: 1.25;
+}
+
+.chord-sheet .column {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: bottom;
+  margin-right: 0.14em;
+}
+
+.chord-sheet .chord {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-weight: 800;
+  color: var(--color-chord);
+  min-height: 1.25em;
+  font-size: 0.95em;
+  letter-spacing: -0.02em;
+}
+
+.chord-sheet .lyrics {
+  color: var(--color-text-primary);
+  min-height: 1.25em;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-weight: 500;
+}
+
+.chord-sheet .comment, .chord-sheet .label {
+  font-weight: 800;
+  color: var(--color-accent);
+  font-size: 0.85em;
+  margin: 0.75rem 0 0.3rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.lyrics-only .chord {
+  display: none !important;
+}
+
+.lyrics-only .lyrics {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+  font-size: 1.05em;
+  line-height: 1.7;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.lyrics-only .row {
+  margin-bottom: 0.3rem;
+  align-items: baseline;
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-page);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
