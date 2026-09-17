@@ -116,33 +116,36 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
       </div>
 
       {/* Alphabet Scrubber */}
-      <div className="flex items-center gap-1 horizontal-touch-scroll pb-1.5 scrollbar-none">
-        <button
-          onClick={() => setSelectedLetter(null)}
-          className={`h-8 px-3.5 flex items-center justify-center rounded-full text-xs font-bold shrink-0 emil-press ${
-            selectedLetter === null
-              ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] shadow-sm font-bold"
-              : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)]"
-          }`}
-        >
-          Todas
-        </button>
-        {ALPHABET.map((letter) => (
+      <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex items-center gap-1.5 horizontal-touch-scroll py-1 px-1 scrollbar-none apple-scroll-mask apple-scroll-mask-sm-none">
           <button
-            key={letter}
-            onClick={() => {
-              setSelectedLetter(letter === selectedLetter ? null : letter);
-              setQuery("");
-            }}
-            className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold shrink-0 emil-press ${
-              selectedLetter === letter
+            onClick={() => setSelectedLetter(null)}
+            className={`h-8 px-3.5 flex items-center justify-center rounded-full text-xs font-bold shrink-0 emil-press ${
+              selectedLetter === null
                 ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] shadow-sm font-bold"
                 : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)]"
             }`}
           >
-            {letter}
+            Todas
           </button>
-        ))}
+          {ALPHABET.map((letter) => (
+            <button
+              key={letter}
+              onClick={() => {
+                setSelectedLetter(letter === selectedLetter ? null : letter);
+                setQuery("");
+              }}
+              className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold shrink-0 emil-press ${
+                selectedLetter === letter
+                  ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] shadow-sm font-bold"
+                  : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)]"
+              }`}
+            >
+              {letter}
+            </button>
+          ))}
+          <div className="w-4 shrink-0" aria-hidden="true" />
+        </div>
       </div>
 
       {/* Song List */}

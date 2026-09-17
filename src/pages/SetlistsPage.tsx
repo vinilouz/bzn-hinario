@@ -161,7 +161,8 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
       </div>
 
       {/* Setlists Segmented Control */}
-      <div className="flex items-center gap-2 horizontal-touch-scroll pb-1 scrollbar-none">
+      <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex items-center gap-2 horizontal-touch-scroll py-1 px-1 scrollbar-none apple-scroll-mask apple-scroll-mask-sm-none">
         <div className="flex items-center gap-1.5 p-1 bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] rounded-full shadow-sm">
           {setlists.map((s) => {
             const isActive = s.id === activeSetlistId;
@@ -205,6 +206,8 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
             <span className="hidden sm:inline">Nova Lista</span>
             <span className="text-[10px] font-mono tnum text-[var(--color-text-secondary)] leading-none">({setlists.length}/{MAX_SETLISTS})</span>
           </button>
+        </div>
+        <div className="w-4 shrink-0" aria-hidden="true" />
         </div>
       </div>
 
