@@ -151,7 +151,7 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
           <button
             onClick={handleStartWorship}
             disabled={activeItemsWithSongs.length === 0}
-            className="flex-1 sm:flex-initial h-9 px-5 flex items-center justify-center gap-2 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] emil-press text-[var(--color-accent-contrast)] font-bold text-sm shadow-md shadow-[var(--color-accent)]/20 disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 sm:flex-initial h-11 sm:h-12 px-6 flex items-center justify-center gap-2.5 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] emil-press text-[var(--color-accent-contrast)] font-bold text-base shadow-md shadow-[var(--color-accent)]/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Play className="w-4 h-4 fill-[var(--color-accent-contrast)] shrink-0" />
             <span>Iniciar Culto</span>
@@ -172,7 +172,7 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
               <div
                 key={s.id}
                 onClick={() => setActiveSetlistId(s.id)}
-                className={`h-8 flex items-center gap-1.5 px-3.5 rounded-full text-xs font-bold cursor-pointer select-none emil-press ${
+                className={`h-10 sm:h-11 flex items-center gap-2 px-4 sm:px-5 rounded-full text-xs sm:text-sm font-bold cursor-pointer select-none emil-press ${
                   isActive
                     ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] shadow-sm font-bold"
                     : "text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)]"
@@ -201,7 +201,7 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
           <button
             onClick={() => setIsAddingList(true)}
             disabled={!canCreateMore}
-            className="h-8 flex items-center gap-1 px-3 rounded-full text-xs font-bold text-[var(--color-accent)] hover:bg-[var(--color-bg-subtle)] emil-press disabled:opacity-30"
+            className="h-10 sm:h-11 flex items-center gap-1.5 px-4 rounded-full text-xs sm:text-sm font-bold text-[var(--color-accent)] hover:bg-[var(--color-bg-subtle)] emil-press disabled:opacity-30"
             title={canCreateMore ? `Criar lista (${setlists.length}/${MAX_SETLISTS})` : `Limite de ${MAX_SETLISTS} listas atingido`}
           >
             <Plus className="w-3.5 h-3.5 shrink-0" />
@@ -304,31 +304,38 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
             return (
               <div
                 key={item.songId}
-                className="flex items-center justify-between p-3 sm:p-3.5 rounded-2xl bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] hover:border-[var(--color-accent)]/50 shadow-sm gap-3"
+                className="flex items-center justify-between p-4 sm:p-5 rounded-3xl bg-[var(--color-bg-card)] border border-[var(--color-border-subtle)] hover:border-[var(--color-accent)]/50 shadow-sm gap-4"
               >
                 <div
                   className="flex items-center gap-3 min-w-0 flex-1 cursor-pointer emil-press"
                   onClick={() => onStartPerformance(item.songId, index)}
                 >
-                  <span className="flex items-center justify-center shrink-0 w-7 h-7 rounded-full bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30 text-xs font-black font-mono tnum">
+                  <span className="flex items-center justify-center shrink-0 w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[var(--color-accent)]/15 text-[var(--color-accent)] border border-[var(--color-accent)]/30 text-sm sm:text-base font-black font-mono tnum">
                     0{index + 1}
                   </span>
                   <div className="min-w-0 flex flex-col justify-center">
-                    <h3 className="text-sm sm:text-base font-bold text-[var(--color-text-primary)] hover:text-[var(--color-accent)] truncate leading-tight">
-                      {item.song.title}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-base sm:text-xl font-bold text-[var(--color-text-primary)] hover:text-[var(--color-accent)] truncate leading-tight">
+                        {item.song.title}
+                      </h3>
+                      {item.song.bpm && (
+                        <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] font-mono tnum font-semibold text-[10px] leading-none">
+                          {item.song.bpm} BPM
+                        </span>
+                      )}
+                    </div>
                     {item.song.artist && (
-                      <p className="text-xs text-[var(--color-text-secondary)] truncate leading-none mt-0.5">{item.song.artist}</p>
+                      <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] truncate leading-none mt-1">{item.song.artist}</p>
                     )}
                   </div>
                 </div>
 
                 <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-                  <div className="h-8 flex items-center bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded-full px-1 gap-0.5 shadow-inner">
+                  <div className="h-10 sm:h-11 flex items-center bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded-full px-1.5 gap-1 shadow-inner">
                     <button
                       onClick={() => stepItemKey(item.songId, -1)}
                       title="Baixar 1 semitom (♭)"
-                      className="w-6 h-6 flex items-center justify-center rounded-full text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card)] emil-press text-xs font-bold"
+                      className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card)] emil-press text-sm sm:text-base font-black"
                     >
                       ♭
                     </button>
@@ -336,7 +343,7 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
                     <select
                       value={item.customKey}
                       onChange={(e) => updateItemKey(item.songId, e.target.value)}
-                      className="bg-transparent text-[var(--color-accent)] font-mono font-black text-xs sm:text-sm px-1 py-0.5 focus:outline-none cursor-pointer text-center leading-none"
+                      className="bg-transparent text-[var(--color-accent)] font-mono font-black text-sm sm:text-base px-2 py-0.5 focus:outline-none cursor-pointer text-center leading-none"
                     >
                       {COMMON_KEYS.map((k) => (
                         <option key={k} value={k} className="bg-[var(--color-bg-page)] text-[var(--color-text-primary)]">
@@ -348,7 +355,7 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
                     <button
                       onClick={() => stepItemKey(item.songId, 1)}
                       title="Subir 1 semitom (♯)"
-                      className="w-6 h-6 flex items-center justify-center rounded-full text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card)] emil-press text-xs font-bold"
+                      className="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center rounded-full text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card)] emil-press text-sm sm:text-base font-black"
                     >
                       ♯
                     </button>
@@ -376,14 +383,14 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
                   <button
                     onClick={() => removeItem(item.songId)}
                     title="Remover desta lista"
-                    className="w-8 h-8 flex items-center justify-center rounded-full text-[var(--color-text-secondary)] hover:text-rose-500 hover:bg-[var(--color-bg-subtle)] emil-press"
+                    className="w-10 h-10 flex items-center justify-center rounded-full text-[var(--color-text-secondary)] hover:text-rose-500 hover:bg-[var(--color-bg-subtle)] emil-press"
                   >
                     <Trash2 className="w-4 h-4 shrink-0" />
                   </button>
 
                   <button
                     onClick={() => onStartPerformance(item.songId, index)}
-                    className="h-8 px-3 flex items-center gap-1 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-accent-contrast)] text-xs font-bold emil-press shadow-sm"
+                    className="h-10 sm:h-11 px-4 sm:px-5 flex items-center gap-2 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-accent-contrast)] text-xs sm:text-sm font-bold emil-press shadow-sm"
                   >
                     <Play className="w-3.5 h-3.5 fill-current shrink-0" />
                     <span className="hidden xs:inline">Tocar</span>

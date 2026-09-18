@@ -87,7 +87,7 @@ export const AdminTrash: React.FC<AdminTrashProps> = ({ onBack }) => {
         {deletedSongs.length > 0 && (
           <button
             onClick={handlePurgeNow}
-            className="flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-rose-500/15 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-500/30 text-xs font-bold emil-press"
+            className="flex items-center gap-2 h-10 sm:h-11 px-4 sm:px-5 rounded-full bg-rose-500/15 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-500/30 text-xs sm:text-sm font-bold emil-press"
           >
             <Trash2 className="w-4 h-4" />
             <span>Limpar Vencidas</span>
@@ -104,7 +104,7 @@ export const AdminTrash: React.FC<AdminTrashProps> = ({ onBack }) => {
 
       <div className="bg-[var(--color-bg-card)] border border-[var(--color-border)]/20 rounded-3xl overflow-hidden shadow-sm transition-colors duration-150">
         <div className="p-4 border-b border-[var(--color-border)]/15 flex items-center justify-between">
-          <span className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
+          <span className="text-xs sm:text-sm font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
             Itens na Lixeira ({deletedSongs.length})
           </span>
         </div>
@@ -124,7 +124,7 @@ export const AdminTrash: React.FC<AdminTrashProps> = ({ onBack }) => {
                 >
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <h3 className="text-sm font-bold text-[var(--color-text-primary)] truncate line-through opacity-75">
+                      <h3 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)] truncate line-through opacity-75">
                         {song.title}
                       </h3>
                       <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] font-mono text-[11px] border border-[var(--color-border)]/20">
@@ -147,14 +147,14 @@ export const AdminTrash: React.FC<AdminTrashProps> = ({ onBack }) => {
                   <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
                     <button
                       onClick={() => handleRestore(song.id)}
-                      className="flex items-center gap-1 h-8 px-3 rounded-full bg-emerald-500/15 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-500/30 text-xs font-bold emil-press"
+                      className="flex items-center gap-1.5 h-9 sm:h-10 px-4 rounded-full bg-emerald-500/15 hover:bg-emerald-600 text-emerald-700 hover:text-white border border-emerald-500/30 text-xs sm:text-sm font-bold emil-press"
                     >
                       <RotateCcw className="w-3.5 h-3.5" />
                       <span>Restaurar</span>
                     </button>
                     <button
                       onClick={() => handlePermanentDelete(song.id, song.title)}
-                      className="flex items-center gap-1 h-8 px-3 rounded-full bg-rose-500/15 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-500/30 text-xs font-bold emil-press"
+                      className="flex items-center gap-1.5 h-9 sm:h-10 px-4 rounded-full bg-rose-500/15 hover:bg-rose-600 text-rose-700 hover:text-white border border-rose-500/30 text-xs sm:text-sm font-bold emil-press"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                       <span>Excluir Agora</span>

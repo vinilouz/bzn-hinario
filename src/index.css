@@ -8,7 +8,7 @@
     --color-bg-card: #FFFFFF;
     --color-bg-subtle: #F2EBE1;
     --color-text-primary: #231815;
-    --color-text-secondary: #7A6658;
+    --color-text-secondary: #5D4638;
     --color-accent: #B8733E;
     --color-accent-hover: #A06232;
     --color-accent-contrast: #FFFFFF;
@@ -28,7 +28,7 @@
     --color-bg-card: #1A1614;
     --color-bg-subtle: #26201D;
     --color-text-primary: #F5EFEB;
-    --color-text-secondary: #A39385;
+    --color-text-secondary: #C8B8AB;
     --color-accent: #D49561;
     --color-accent-hover: #E2A674;
     --color-accent-contrast: #12100E;
@@ -41,6 +41,13 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
     overscroll-behavior: none;
+    font-size: 17px;
+  }
+
+  @media (min-width: 640px) {
+    html {
+      font-size: 18px;
+    }
   }
 
   body {
@@ -84,13 +91,13 @@
 }
 
 .emil-press {
-  transition: transform 120ms var(--ease-out), opacity 120ms var(--ease-out), background-color 120ms var(--ease-out), border-color 120ms var(--ease-out);
+  transition: transform 140ms var(--ease-out), opacity 140ms var(--ease-out), background-color 140ms var(--ease-out), border-color 140ms var(--ease-out);
   will-change: transform;
 }
 
 .emil-press:active {
-  transform: scale(0.96);
-  opacity: 0.9;
+  transform: scale(0.97);
+  opacity: 0.92;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -178,6 +185,21 @@
 
 .animate-modal-pop {
   animation: modal-pop 180ms var(--ease-spring) forwards;
+}
+
+@keyframes sheet-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-sheet-slide-up {
+  animation: sheet-slide-up 260ms var(--ease-spring) forwards;
 }
 
 .chord-sheet {

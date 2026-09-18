@@ -9,7 +9,8 @@
     "createdAt": 1710000000000,
     "updatedAt": 1710000000000,
     "isDeleted": false,
-    "deletedAt": null
+    "deletedAt": null,
+    "bpm": 70
   },
   {
     "id": "song-2",
@@ -21,7 +22,8 @@
     "createdAt": 1710000100000,
     "updatedAt": 1710000100000,
     "isDeleted": false,
-    "deletedAt": null
+    "deletedAt": null,
+    "bpm": 68
   },
   {
     "id": "song-3",
@@ -33,7 +35,8 @@
     "createdAt": 1710000200000,
     "updatedAt": 1710000200000,
     "isDeleted": false,
-    "deletedAt": null
+    "deletedAt": null,
+    "bpm": 85
   },
   {
     "id": "song-4",
@@ -45,6 +48,7 @@
     "createdAt": 1710000300000,
     "updatedAt": 1710000300000,
     "isDeleted": false,
-    "deletedAt": null
+    "deletedAt": null,
+    "bpm": 130
   }
 ]

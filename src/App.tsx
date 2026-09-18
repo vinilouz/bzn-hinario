@@ -6,6 +6,7 @@ import { initializeDatabase } from './db/dexie';
 import { syncSongsWithRemote } from './db/sync';
 import { Navbar } from './components/Navbar';
 import { Footer } from './components/Footer';
+import { PwaInstallPrompt } from './components/PwaInstallPrompt';
 import { IndexBook } from './pages/IndexBook';
 import { SetlistsPage } from './pages/SetlistsPage';
 import { Performance } from './pages/Performance';
@@ -84,6 +85,7 @@ export const AppContent: React.FC = () => {
       </main>
 
       <Footer />
+      <PwaInstallPrompt />
     </div>
   );
 };

@@ -46,7 +46,7 @@ export const Performance: React.FC<PerformanceProps> = ({
   const [currentKey, setCurrentKey] = useState<string>("C");
   const [fontSize, setFontSize] = useState<number>(() => {
     const saved = localStorage.getItem("hinario_font_size");
-    return saved ? Number(saved) : 18;
+    return saved ? Number(saved) : 22;
   });
   const [hideChords, setHideChords] = useState<boolean>(() => {
     return localStorage.getItem("hinario_hide_chords") === "true";
@@ -271,10 +271,10 @@ export const Performance: React.FC<PerformanceProps> = ({
           <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
             <button
               onClick={onExit}
-              className="h-8 w-8 sm:w-auto sm:px-3 flex items-center justify-center gap-1.5 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-card)] text-[var(--color-text-primary)] text-xs font-bold emil-press shrink-0"
+              className="h-10 w-10 sm:w-auto sm:px-4 flex items-center justify-center gap-2 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-card)] text-[var(--color-text-primary)] text-sm font-bold emil-press shrink-0"
               title={sourceTab === "setlists" ? "Voltar à Lista" : "Voltar ao Índice"}
             >
-              <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />
               <span className="hidden sm:inline">
                 {sourceTab === "setlists" ? "Lista" : "Índice"}
               </span>
@@ -287,14 +287,28 @@ export const Performance: React.FC<PerformanceProps> = ({
                     0{currentIndex + 1}
                   </span>
                 )}
-                <h1 className="text-sm sm:text-lg font-black text-[var(--color-text-primary)] truncate tracking-tight leading-tight">
+                <h1 className="text-base sm:text-2xl font-black text-[var(--color-text-primary)] truncate tracking-tight leading-tight">
                   {currentSong.title}
                 </h1>
               </div>
-              {currentSong.artist && (
-                <p className="text-[11px] sm:text-xs text-[var(--color-text-secondary)] truncate leading-none mt-0.5">
-                  {currentSong.artist}
-                </p>
+              {(currentSong.artist || currentSong.bpm) && (
+                <div className="flex items-center gap-2 mt-0.5 min-w-0">
+                  {currentSong.artist && (
+                    <p className="text-[11px] sm:text-xs text-[var(--color-text-secondary)] truncate leading-none">
+                      {currentSong.artist}
+                    </p>
+                  )}
+                  {currentSong.artist && currentSong.bpm && (
+                    <span className="text-[10px] text-[var(--color-text-secondary)] opacity-40 leading-none select-none">
+                      •
+                    </span>
+                  )}
+                  {currentSong.bpm && (
+                    <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/30 px-1.5 py-0.5 rounded leading-none shrink-0">
+                      {currentSong.bpm} BPM
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -303,28 +317,28 @@ export const Performance: React.FC<PerformanceProps> = ({
             {/* Toggle Cifras / Letras */}
             <button
               onClick={toggleHideChords}
-              className={`h-8 w-8 sm:w-auto sm:px-3 flex items-center justify-center gap-1.5 rounded-full text-xs font-bold emil-press border shrink-0 ${
+              className={`h-10 w-10 sm:w-auto sm:px-4 flex items-center justify-center gap-2 rounded-full text-xs sm:text-sm font-bold emil-press border shrink-0 ${
                 hideChords
                   ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] border-[var(--color-accent)] shadow-sm"
                   : "bg-[var(--color-bg-subtle)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card)]"
               }`}
               title={hideChords ? "Exibir cifras" : "Ocultar cifras (modo letra pura)"}
             >
-              {hideChords ? <Type className="w-3.5 h-3.5 shrink-0" /> : <Music2 className="w-3.5 h-3.5 shrink-0" />}
+              {hideChords ? <Type className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" /> : <Music2 className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />}
               <span className="hidden sm:inline">{hideChords ? "Letra" : "Cifras"}</span>
             </button>
 
             {/* Toggle 2 Colunas */}
             <button
               onClick={toggleTwoColumns}
-              className={`hidden md:flex h-8 px-2.5 items-center gap-1.5 rounded-full text-xs font-bold emil-press border ${
+              className={`hidden md:flex h-10 px-3.5 items-center gap-2 rounded-full text-xs sm:text-sm font-bold emil-press border ${
                 twoColumns
                   ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] border-[var(--color-accent)] shadow-sm"
                   : "bg-[var(--color-bg-subtle)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-card)]"
               }`}
               title={twoColumns ? "Visualização em 1 coluna" : "Visualização em 2 colunas (lado a lado)"}
             >
-              {twoColumns ? <Columns2 className="w-3.5 h-3.5 shrink-0" /> : <AlignLeft className="w-3.5 h-3.5 shrink-0" />}
+              {twoColumns ? <Columns2 className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" /> : <AlignLeft className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" />}
               <span>{twoColumns ? "2 Colunas" : "1 Coluna"}</span>
             </button>
 
@@ -332,22 +346,22 @@ export const Performance: React.FC<PerformanceProps> = ({
             <button
               onClick={() => toggleSongInActiveSetlist(currentSong)}
               title={isStarred ? `Remover de ${activeSetlist?.name}` : `Adicionar em ${activeSetlist?.name}`}
-              className={`w-8 h-8 flex items-center justify-center rounded-full border emil-press ${
+              className={`w-10 h-10 flex items-center justify-center rounded-full border emil-press ${
                 isStarred
                   ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] border-[var(--color-accent)] shadow-sm"
                   : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-card)]"
               }`}
             >
-              <Star className={`w-3.5 h-3.5 shrink-0 ${isStarred ? "fill-current" : ""}`} />
+              <Star className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${isStarred ? "fill-current" : ""}`} />
             </button>
 
             {/* Theme toggle */}
             <button
               onClick={toggleTheme}
-              className="w-8 h-8 flex items-center justify-center rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] emil-press"
+              className="w-10 h-10 flex items-center justify-center rounded-full border border-[var(--color-border-subtle)] bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] emil-press"
               title={theme === "light" ? "Modo Palco Escuro (#4B2E2B)" : "Modo Hinário Creme (#FFF8F0)"}
             >
-              {theme === "light" ? <Moon className="w-3.5 h-3.5 shrink-0" /> : <Sun className="w-3.5 h-3.5 text-[var(--color-accent)] shrink-0" />}
+              {theme === "light" ? <Moon className="w-4 h-4 sm:w-5 sm:h-5 shrink-0" /> : <Sun className="w-4 h-4 sm:w-5 sm:h-5 text-[var(--color-accent)] shrink-0" />}
             </button>
           </div>
         </div>
@@ -355,6 +369,28 @@ export const Performance: React.FC<PerformanceProps> = ({
 
       {/* Main Reader View */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        {(currentSong.artist || currentSong.bpm) && (
+          <div className="mb-4 pb-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2 flex-wrap">
+              {currentSong.artist && (
+                <span className="text-sm sm:text-base font-bold text-[var(--color-text-secondary)]">
+                  {currentSong.artist}
+                </span>
+              )}
+              {currentSong.artist && currentSong.bpm && (
+                <span className="text-xs text-[var(--color-text-secondary)] opacity-30 select-none">•</span>
+              )}
+              {currentSong.bpm && (
+                <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-mono font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/30 px-3 py-1 rounded-full">
+                  {currentSong.bpm} BPM
+                </span>
+              )}
+            </div>
+            <div className="text-xs sm:text-sm font-mono text-[var(--color-text-secondary)]">
+              Tom original: <strong className="text-[var(--color-text-primary)] font-bold">{currentSong.originalKey}</strong>
+            </div>
+          </div>
+        )}
         <ChordViewer
           song={currentSong}
           currentKey={currentKey}

@@ -33,6 +33,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
+  const [bpm, setBpm] = useState('');
   const [originalKey, setOriginalKey] = useState('C');
   const [keyMode, setKeyMode] = useState<'auto' | 'manual'>('auto');
   const [formatMode, setFormatMode] = useState<'auto' | 'chords-over-lyrics' | 'chordpro'>('auto');
@@ -74,6 +75,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setEditingId(null);
     setTitle('');
     setArtist('');
+    setBpm('');
     setOriginalKey('C');
     setKeyMode('auto');
     setFormatMode('auto');
@@ -86,6 +88,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setEditingId(song.id);
     setTitle(song.title);
     setArtist(song.artist || '');
+    setBpm(song.bpm !== undefined ? String(song.bpm) : '');
     setOriginalKey(song.originalKey);
     setKeyMode('manual');
     setFormatMode(song.format);
@@ -102,11 +105,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
 
     const sanitizedContent = cleanCifraClubArtifacts(content);
+    const parsedBpm = bpm.trim() ? parseInt(bpm.trim(), 10) : undefined;
 
     const songData: Song = {
       id: editingId || `song_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       title: title.trim(),
       artist: artist.trim() || undefined,
+      bpm: parsedBpm && !isNaN(parsedBpm) && parsedBpm > 0 ? parsedBpm : undefined,
       originalKey: resolvedKey,
       format: resolvedFormat,
       content: sanitizedContent,
@@ -172,10 +177,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         const rawName = file.name.replace(/\.[^/.]+$/, '').replace(/^[0-9]+[-_\s]*/, '').trim();
         const songTitle = rawName || `Música ${i + 1}`;
         const key = extractKeyFromText(text);
+        const detectedBpmMatch = text.match(/(?:bpm|tempo|andamento):\s*(\d{2,3})/i);
+        const bpmVal = detectedBpmMatch ? parseInt(detectedBpmMatch[1], 10) : undefined;
+        const validBpm = bpmVal && !isNaN(bpmVal) && bpmVal >= 30 && bpmVal <= 300 ? bpmVal : undefined;
 
         newSongs.push({
           id: `song_${now}_${i}_${Math.random().toString(36).slice(2, 6)}`,
           title: songTitle,
+          bpm: validBpm,
           originalKey: key,
           format: text.includes('[') && text.includes(']') ? 'chordpro' : 'chords-over-lyrics',
           content: text.trim(),
@@ -232,7 +241,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <button
             onClick={() => fileInputRef.current?.click()}
             disabled={isImporting}
-            className="flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] active:scale-95 text-[var(--color-accent-contrast)] text-xs font-bold shadow-md shadow-[#C08552]/20 disabled:opacity-50 emil-press"
+            className="flex items-center gap-2 h-10 sm:h-11 px-4 sm:px-5 rounded-full bg-[var(--color-accent)] hover:bg-[var(--color-accent-hover)] text-[var(--color-accent-contrast)] text-xs sm:text-sm font-bold shadow-md shadow-[#C08552]/20 disabled:opacity-50 emil-press"
             title="Importar múltiplos arquivos TXT"
           >
             <Upload className="w-4 h-4" />
@@ -241,7 +250,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <button
             onClick={handleOpenCreate}
-            className="flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] active:scale-95 text-[var(--color-text-primary)] text-xs font-bold emil-press shadow-sm"
+            className="flex items-center gap-2 h-10 sm:h-11 px-4 sm:px-5 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-[var(--color-text-primary)] text-xs sm:text-sm font-bold emil-press shadow-sm"
           >
             <Plus className="w-4 h-4 text-[#C08552]" />
             <span>Nova Música</span>
@@ -249,7 +258,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <button
             onClick={onNavigateToTrash}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] active:scale-95 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] emil-press"
+            className="flex items-center gap-1.5 h-10 sm:h-11 px-3.5 sm:px-4 rounded-2xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] emil-press"
             title="Lixeira"
           >
             <Archive className="w-4 h-4 text-rose-600" />
@@ -263,7 +272,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           <button
             onClick={handleSync}
             disabled={isSyncing}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] active:scale-95 text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-50 emil-press"
+            className="flex items-center gap-1.5 h-10 sm:h-11 px-3.5 sm:px-4 rounded-2xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-50 emil-press"
             title="Sincronizar com a nuvem"
           >
             <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-[#C08552]' : ''}`} />
@@ -315,8 +324,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
 
             <form onSubmit={handleSave} className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
+                <div className="sm:col-span-6 space-y-1.5">
                   <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
                     Título da Música *
                   </label>
@@ -330,9 +339,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   />
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="sm:col-span-4 space-y-1.5">
                   <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    Artista / Ministério
+                    Artista / Ministério (Opcional)
                   </label>
                   <input
                     type="text"
@@ -340,6 +349,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     onChange={(e) => setArtist(e.target.value)}
                     placeholder="Ex: Isaías Saad"
                     className="w-full px-3.5 py-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 rounded-2xl text-base sm:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
+                  />
+                </div>
+
+                <div className="sm:col-span-2 space-y-1.5">
+                  <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    BPM (Opcional)
+                  </label>
+                  <input
+                    type="number"
+                    min="30"
+                    max="300"
+                    value={bpm}
+                    onChange={(e) => setBpm(e.target.value)}
+                    placeholder="Ex: 72"
+                    className="w-full px-3.5 py-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 rounded-2xl text-base sm:text-sm font-mono text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
                   />
                 </div>
               </div>
@@ -456,6 +480,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       id: 'preview',
                       title,
                       artist,
+                      bpm: bpm.trim() ? parseInt(bpm.trim(), 10) : undefined,
                       originalKey: resolvedKey,
                       format: resolvedFormat,
                       content,
@@ -474,7 +499,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="h-9 px-3.5 rounded-full bg-[var(--color-bg-subtle)] hover:bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] text-xs font-semibold emil-press"
+                  className="h-10 sm:h-11 px-5 rounded-full bg-[var(--color-bg-subtle)] hover:bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] text-xs sm:text-sm font-bold emil-press"
                 >
                   Cancelar
                 </button>
@@ -512,13 +537,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
-                    <h3 className="text-sm font-bold text-[var(--color-text-primary)] truncate">{song.title}</h3>
-                    <span className="px-2 py-0.5 rounded-md bg-[var(--color-accent)]/15 border border-[#C08552]/30 text-[#C08552] font-mono font-bold text-[11px]">
+                    <h3 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)] truncate">{song.title}</h3>
+                    <span className="px-2 py-0.5 rounded-md bg-[var(--color-accent)]/15 border border-[#C08552]/30 text-[#C08552] font-mono font-bold text-xs sm:text-sm px-2.5 py-1">
                       {song.originalKey}
                     </span>
+                    {song.bpm && (
+                      <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 text-[var(--color-text-secondary)] font-mono font-bold text-xs sm:text-sm px-2.5 py-1">
+                        {song.bpm} BPM
+                      </span>
+                    )}
                   </div>
                   {song.artist && (
-                    <p className="text-xs text-[var(--color-text-secondary)] truncate mt-0.5">{song.artist}</p>
+                    <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] truncate mt-1">{song.artist}</p>
                   )}
                 </div>
 
@@ -526,14 +556,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <button
                     onClick={() => handleOpenEdit(song)}
                     title="Editar cifra"
-                    className="p-2 rounded-2xl bg-[var(--color-bg-subtle)] hover:bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] emil-press"
+                    className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[var(--color-bg-subtle)] hover:bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] emil-press"
                   >
                     <Edit className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(song.id, song.title)}
                     title="Mover para lixeira"
-                    className="p-2 rounded-2xl bg-[var(--color-bg-subtle)] hover:bg-rose-500/20 text-[var(--color-text-secondary)] hover:text-rose-600 emil-press"
+                    className="w-10 h-10 flex items-center justify-center rounded-2xl bg-[var(--color-bg-subtle)] hover:bg-rose-500/20 text-[var(--color-text-secondary)] hover:text-rose-600 emil-press"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>

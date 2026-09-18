@@ -62,21 +62,21 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
             <div className="w-6 h-6 rounded-lg bg-[var(--color-accent)]/15 flex items-center justify-center text-[var(--color-accent)]">
               <BookOpen className="w-3.5 h-3.5" />
             </div>
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--color-accent)] font-mono">
+            <span className="text-xs sm:text-sm font-bold uppercase tracking-wider text-[var(--color-accent)] font-mono">
               Índice Geral do Hinário
             </span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-[var(--color-text-primary)] tracking-tight leading-tight">
+          <h1 className="text-2xl sm:text-4xl font-black text-[var(--color-text-primary)] tracking-tight leading-tight">
             Todas as Músicas (A-Z)
           </h1>
-          <p className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
+          <p className="text-sm sm:text-base text-[var(--color-text-secondary)]">
             {songs.length} louvores disponíveis 100% offline. Toque para abrir a cifra.
           </p>
         </div>
 
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full sm:w-auto">
           {setlists.length > 0 && (
-            <div className="h-9 flex items-center gap-1.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded-full px-3 text-xs text-[var(--color-text-secondary)]">
+            <div className="h-11 sm:h-12 flex items-center gap-2 bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded-full px-4 text-xs sm:text-sm text-[var(--color-text-secondary)]">
               <span className="text-[11px] font-semibold">Lista:</span>
               <select
                 value={activeSetlist?.id || ""}
@@ -92,8 +92,8 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
             </div>
           )}
 
-          <div className="w-full sm:w-72 relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-secondary)] pointer-events-none" />
+          <div className="w-full sm:w-80 relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[var(--color-text-secondary)] pointer-events-none" />
             <input
               type="text"
               value={query}
@@ -102,7 +102,7 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
                 if (selectedLetter) setSelectedLetter(null);
               }}
               placeholder="Buscar título, artista ou letra..."
-              className="w-full h-9 pl-10 pr-9 bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded-full text-[16px] sm:text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
+              className="w-full h-11 sm:h-12 pl-11 pr-10 bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded-full text-base sm:text-lg text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
             />
             {query && (
               <button
@@ -110,7 +110,7 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] p-1 emil-press rounded-full"
                 aria-label="Limpar pesquisa"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -126,11 +126,10 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
         >
           <button
             onClick={() => setSelectedLetter(null)}
-            className={`h-8 px-3.5 flex items-center justify-center rounded-full text-xs font-bold shrink-0 emil-press ${
-              selectedLetter === null
+            className={`h-8 sm:h-9 px-3 sm:px-3.5 flex items-center justify-center rounded-xl sm:rounded-full text-xs sm:text-sm font-bold shrink-0 emil-press ${selectedLetter === null
                 ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] shadow-sm font-bold"
                 : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)]"
-            }`}
+              }`}
           >
             Todas
           </button>
@@ -141,11 +140,10 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
                 setSelectedLetter(letter === selectedLetter ? null : letter);
                 setQuery("");
               }}
-              className={`w-8 h-8 flex items-center justify-center rounded-full text-xs font-bold shrink-0 emil-press ${
-                selectedLetter === letter
+              className={`w-8 sm:w-9 h-8 sm:h-9 flex items-center justify-center rounded-xl sm:rounded-full text-xs sm:text-sm font-bold shrink-0 emil-press ${selectedLetter === letter
                   ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] shadow-sm font-bold"
                   : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)]"
-              }`}
+                }`}
             >
               {letter}
             </button>
@@ -167,20 +165,25 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
             return (
               <div
                 key={song.id}
-                className="flex items-center justify-between p-3 sm:p-3.5 hover:bg-[var(--color-bg-subtle)] emil-press group cursor-pointer"
+                className="flex items-center justify-between p-4 sm:p-5 hover:bg-[var(--color-bg-subtle)] emil-press group cursor-pointer"
                 onClick={() => onOpenSong(song.id, "index")}
               >
                 <div className="min-w-0 pr-4 flex-1 flex flex-col justify-center">
                   <div className="flex items-center gap-2">
-                    <h2 className="text-sm sm:text-base font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] truncate leading-tight">
+                    <h2 className="text-base sm:text-xl font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] truncate leading-tight">
                       {song.title}
                     </h2>
-                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/30 text-[var(--color-accent)] font-mono tnum font-bold text-[11px] leading-none">
+                    <span className="shrink-0 px-2 py-0.5 rounded-full bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/30 text-[var(--color-accent)] font-mono tnum font-bold text-xs sm:text-sm leading-none">
                       {song.originalKey}
                     </span>
+                    {song.bpm && (
+                      <span className="shrink-0 px-2 py-0.5 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] font-mono tnum font-semibold text-xs sm:text-sm leading-none">
+                        {song.bpm} BPM
+                      </span>
+                    )}
                   </div>
                   {song.artist && (
-                    <p className="text-xs text-[var(--color-text-secondary)] truncate leading-none mt-0.5">{song.artist}</p>
+                    <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] truncate leading-none mt-1">{song.artist}</p>
                   )}
                 </div>
 
@@ -191,13 +194,12 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
                       toggleSongInActiveSetlist(song);
                     }}
                     title={starred ? `Remover de ${activeSetlist?.name}` : `Adicionar em ${activeSetlist?.name}`}
-                    className={`w-8 h-8 flex items-center justify-center rounded-full border emil-press ${
-                      starred
+                    className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full border emil-press ${starred
                         ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] border-[var(--color-accent)] shadow-sm"
                         : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] border border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-card)]"
-                    }`}
+                      }`}
                   >
-                    <Star className={`w-3.5 h-3.5 shrink-0 ${starred ? "fill-current" : ""}`} />
+                    <Star className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${starred ? "fill-current" : ""}`} />
                   </button>
                 </div>
               </div>

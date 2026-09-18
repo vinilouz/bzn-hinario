@@ -220,7 +220,7 @@ export function preprocessChordSheet(raw: string): string {
 
   // Strip standalone Cifra Club metadata headers
   text = text.replace(/^\s*Tom:\s*[A-G][#b]?m?\s*$/gim, '');
-  text = text.replace(/^\s*(?:Capotraste|Afinação|Intro):\s*.*$/gim, '');
+  text = text.replace(/^\s*(?:Capotraste|Afinação|Intro|BPM|Tempo|Andamento):\s*.*$/gim, '');
 
   // Apply complete Cifra Club chord normalizer
   text = normalizeCifraClubChords(text);

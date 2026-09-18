@@ -2,6 +2,7 @@ export interface Song {
   id: string;
   title: string;
   artist?: string;
+  bpm?: number;
   originalKey: string;
   content: string;
   format: 'chords-over-lyrics' | 'chordpro';
