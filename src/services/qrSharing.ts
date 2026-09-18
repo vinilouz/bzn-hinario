@@ -1,12 +1,9 @@
 import QRCode from 'qrcode';
 import type { QrSetlistPayload, SetlistItem, Song } from '../types';
 
-const QR_PREFIX_V1 = 'BZN1:';
-const QR_PREFIX_V2 = 'BZN2:';
-
 export async function compressString(str: string): Promise<string> {
   if (typeof CompressionStream === 'undefined') {
-    return 'RAW:' + btoa(unescape(encodeURIComponent(str)));
+    return btoa(unescape(encodeURIComponent(str)));
   }
   try {
     const stream = new Blob([str]).stream().pipeThrough(new CompressionStream('deflate-raw'));
@@ -16,29 +13,34 @@ export async function compressString(str: string): Promise<string> {
     for (let i = 0; i < bytes.byteLength; i++) {
       binary += String.fromCharCode(bytes[i]);
     }
-    return 'Z:' + btoa(binary);
+    return btoa(binary);
   } catch {
-    return 'RAW:' + btoa(unescape(encodeURIComponent(str)));
+    return btoa(unescape(encodeURIComponent(str)));
   }
 }
 
 export async function decompressString(encoded: string): Promise<string> {
-  if (encoded.startsWith('RAW:')) {
-    return decodeURIComponent(escape(atob(encoded.slice(4))));
+  const clean = encoded.replace(/^BZN[12]:/, '').trim();
+
+  if (clean.startsWith('{')) {
+    return clean;
   }
-  if (encoded.startsWith('Z:')) {
-    if (typeof DecompressionStream === 'undefined') {
-      throw new Error('Decompressão não suportada neste navegador.');
-    }
-    const binary = atob(encoded.slice(2));
+
+  try {
+    const binary = atob(clean);
     const bytes = new Uint8Array(binary.length);
     for (let i = 0; i < binary.length; i++) {
       bytes[i] = binary.charCodeAt(i);
     }
     const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
     return await new Response(stream).text();
+  } catch {
+    try {
+      return decodeURIComponent(escape(atob(clean)));
+    } catch {
+      return clean;
+    }
   }
-  return encoded;
 }
 
 export async function encodeSetlistToPayload(
@@ -54,8 +56,7 @@ export async function encodeSetlistToPayload(
   };
 
   const jsonStr = JSON.stringify(payload);
-  const compressed = await compressString(jsonStr);
-  return QR_PREFIX_V2 + compressed;
+  return compressString(jsonStr);
 }
 
 export async function decodePayloadToSetlist(
@@ -66,18 +67,9 @@ export async function decodePayloadToSetlist(
   songs?: Song[];
 } | null> {
   try {
-    const trimmed = raw.trim();
-    let jsonStr = '';
-
-    if (trimmed.startsWith(QR_PREFIX_V2)) {
-      jsonStr = await decompressString(trimmed.slice(QR_PREFIX_V2.length));
-    } else if (trimmed.startsWith(QR_PREFIX_V1)) {
-      jsonStr = trimmed.slice(QR_PREFIX_V1.length);
-    } else {
-      jsonStr = trimmed;
-    }
-
+    const jsonStr = await decompressString(raw);
     const parsed: QrSetlistPayload = JSON.parse(jsonStr);
+
     if (!parsed || !parsed.n || !Array.isArray(parsed.s)) {
       return null;
     }
