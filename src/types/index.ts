@@ -35,9 +35,10 @@ export interface SetlistItemWithSong {
 }
 
 export interface QrSetlistPayload {
-  v: 1;
+  v: 1 | 2;
   n: string;
   s: [string, string][];
+  songs?: Song[];
 }
 
 export interface AppConfig {

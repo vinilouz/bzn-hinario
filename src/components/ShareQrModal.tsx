@@ -2,7 +2,8 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Copy, Check, QrCode } from "lucide-react";
 import { encodeSetlistToPayload, generateQrDataUrl } from "../services/qrSharing";
-import type { Setlist } from "../types";
+import { db } from "../db/dexie";
+import type { Setlist, Song } from "../types";
 
 interface ShareQrModalProps {
   isOpen: boolean;
@@ -14,17 +15,40 @@ export const ShareQrModal: React.FC<ShareQrModalProps> = ({ isOpen, setlist, onC
   const [qrUrl, setQrUrl] = useState<string>("");
   const [payload, setPayload] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
+    let isCancelled = false;
     if (isOpen && setlist) {
-      const code = encodeSetlistToPayload(setlist.name, setlist.items);
-      setPayload(code);
-      generateQrDataUrl(code).then(setQrUrl).catch(console.error);
+      (async () => {
+        setIsGenerating(true);
+        const fullSongs: Song[] = [];
+        for (const item of setlist.items) {
+          const s = await db.songs.get(item.songId);
+          if (s && !s.isDeleted) {
+            fullSongs.push(s);
+          }
+        }
+        const code = await encodeSetlistToPayload(setlist.name, setlist.items, fullSongs);
+        if (!isCancelled) {
+          setPayload(code);
+          const url = await generateQrDataUrl(code);
+          setQrUrl(url);
+          setIsGenerating(false);
+        }
+      })().catch((err) => {
+        console.error("Erro ao gerar payload do QR Code:", err);
+        if (!isCancelled) setIsGenerating(false);
+      });
     } else {
       setQrUrl("");
       setPayload("");
       setCopied(false);
+      setIsGenerating(false);
     }
+    return () => {
+      isCancelled = true;
+    };
   }, [isOpen, setlist]);
 
   if (!isOpen || !setlist) return null;
@@ -59,7 +83,7 @@ export const ShareQrModal: React.FC<ShareQrModalProps> = ({ isOpen, setlist, onC
                 {setlist.name}
               </h2>
               <p className="text-[11px] text-[var(--color-text-secondary)] font-mono tnum leading-none mt-0.5">
-                {setlist.items.length} {setlist.items.length === 1 ? "música" : "músicas"}
+                {setlist.items.length} {setlist.items.length === 1 ? "música" : "músicas"} • 100% Offline
               </p>
             </div>
           </div>
@@ -71,18 +95,30 @@ export const ShareQrModal: React.FC<ShareQrModalProps> = ({ isOpen, setlist, onC
           </button>
         </div>
 
-        <div className="flex flex-col items-center justify-center p-3 bg-[#FFF8F0] rounded-2xl shadow-inner border border-[#8C5A3C]/30">
-          {qrUrl ? (
-            <img src={qrUrl} alt="QR Code da Lista" className="max-w-[220px] sm:max-w-[240px] w-full aspect-square object-contain rounded-lg mx-auto" />
+        <div className="flex flex-col items-center justify-center p-3 bg-[#FFF8F0] rounded-2xl shadow-inner border border-[#8C5A3C]/30 min-h-[220px]">
+          {isGenerating ? (
+            <div className="max-w-[220px] sm:max-w-[240px] w-full aspect-square flex flex-col items-center justify-center text-[var(--color-text-secondary)] text-xs mx-auto gap-2">
+              <div className="w-6 h-6 border-2 border-[var(--color-accent)] border-t-transparent rounded-full animate-spin" />
+              <span>Compactando cifras offline...</span>
+            </div>
+          ) : qrUrl ? (
+            <img
+              src={qrUrl}
+              alt="QR Code da Lista"
+              className="max-w-[220px] sm:max-w-[240px] w-full aspect-square object-contain rounded-lg mx-auto"
+            />
           ) : (
-            <div className="max-w-[220px] sm:max-w-[240px] w-full aspect-square flex items-center justify-center text-[var(--color-text-secondary)] text-xs mx-auto">
-              Gerando QR Code...
+            <div className="max-w-[220px] sm:max-w-[240px] w-full aspect-square flex flex-col items-center justify-center text-[var(--color-text-secondary)] text-xs mx-auto p-4 text-center">
+              <p className="font-semibold text-[var(--color-text-primary)]">Lista extensa</p>
+              <p className="text-[11px] mt-1">
+                A lista possui muitas músicas para a câmera ler. Use o botão <strong>Copiar Código</strong> abaixo para transferir!
+              </p>
             </div>
           )}
         </div>
 
         <p className="text-xs text-[var(--color-text-secondary)] leading-relaxed">
-          Aponte a câmera dos outros celulares em <strong>Escanear QR Code</strong> para sincronizar a lista na hora, 100% offline.
+          Transfere a lista e as <strong>cifras completas</strong> de aparelho para aparelho sem precisar de internet ou servidor.
         </p>
 
         <div className="pt-2 flex items-center gap-2">

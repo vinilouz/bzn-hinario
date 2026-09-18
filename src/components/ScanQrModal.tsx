@@ -1,25 +1,29 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { X, Camera, Clipboard, AlertCircle, CheckCircle2 } from "lucide-react";
 import { Html5Qrcode } from "html5-qrcode";
-import { X, Camera, Clipboard, CheckCircle2, AlertCircle } from "lucide-react";
 import { decodePayloadToSetlist } from "../services/qrSharing";
 import { useSetlists } from "../context/SetlistListsContext";
+import type { Song } from "../types";
 
 interface ScanQrModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+interface DecodedSetlist {
+  name: string;
+  items: { songId: string; customKey: string }[];
+  songs?: Song[];
+}
+
 export const ScanQrModal: React.FC<ScanQrModalProps> = ({ isOpen, onClose }) => {
   const { importSetlist, canCreateMore } = useSetlists();
   const [activeTab, setActiveTab] = useState<"camera" | "paste">("camera");
   const [pastedCode, setPastedCode] = useState("");
-  const [scannedData, setScannedData] = useState<{
-    name: string;
-    items: { songId: string; customKey: string }[];
-  } | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [scannedData, setScannedData] = useState<DecodedSetlist | null>(null);
 
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const isScanningRef = useRef<boolean>(false);
@@ -40,15 +44,15 @@ export const ScanQrModal: React.FC<ScanQrModalProps> = ({ isOpen, onClose }) => 
     }
   };
 
-  const handleProcessCode = (code: string) => {
+  const handleProcessCode = async (code: string) => {
     setErrorMsg(null);
-    const decoded = decodePayloadToSetlist(code);
+    const decoded = await decodePayloadToSetlist(code);
     if (!decoded) {
       setErrorMsg("QR Code ou código inválido. Verifique se copiou o código completo.");
       return;
     }
     setScannedData(decoded);
-    stopScanner();
+    await stopScanner();
   };
 
   useEffect(() => {
@@ -98,9 +102,14 @@ export const ScanQrModal: React.FC<ScanQrModalProps> = ({ isOpen, onClose }) => 
 
   const handleConfirmImport = async (mode: "new" | "replace") => {
     if (!scannedData) return;
-    const result = await importSetlist(scannedData.name, scannedData.items, mode);
+    const result = await importSetlist(scannedData.name, scannedData.items, mode, scannedData.songs);
     if (result.success) {
-      setSuccessMsg(`Lista "${scannedData.name}" sincronizada com sucesso!`);
+      const count = scannedData.songs?.length || 0;
+      setSuccessMsg(
+        count > 0
+          ? `Lista "${scannedData.name}" e ${count} ${count === 1 ? 'música importada' : 'músicas importadas'} offline!`
+          : `Lista "${scannedData.name}" sincronizada com sucesso!`
+      );
       setTimeout(() => {
         onClose();
       }, 1200);
@@ -147,6 +156,11 @@ export const ScanQrModal: React.FC<ScanQrModalProps> = ({ isOpen, onClose }) => 
               <p className="text-xs text-[var(--color-text-secondary)] font-mono tnum">
                 {scannedData.items.length} {scannedData.items.length === 1 ? "louvor" : "louvores"} com tons pré-definidos
               </p>
+              {scannedData.songs && scannedData.songs.length > 0 && (
+                <div className="inline-block px-2.5 py-1 rounded-full bg-[var(--color-accent)]/15 text-[var(--color-accent)] text-xs font-bold mt-1">
+                  ✦ {scannedData.songs.length} {scannedData.songs.length === 1 ? "cifra completa inclusa" : "cifras completas inclusas"}
+                </div>
+              )}
             </div>
 
             {errorMsg && (
@@ -224,7 +238,7 @@ export const ScanQrModal: React.FC<ScanQrModalProps> = ({ isOpen, onClose }) => 
                   rows={4}
                   value={pastedCode}
                   onChange={(e) => setPastedCode(e.target.value)}
-                  placeholder="Cole aqui o código copiado do outro celular (ex: BZN1:{...})..."
+                  placeholder="Cole aqui o código copiado do outro celular (ex: BZN2:{...})..."
                   className="w-full px-3.5 py-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded-2xl text-xs sm:text-sm text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent)] font-mono"
                 />
                 <button

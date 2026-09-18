@@ -26,7 +26,8 @@ interface SetlistListsContextType {
   importSetlist: (
     name: string,
     items: { songId: string; customKey: string }[],
-    mode: "new" | "replace"
+    mode: "new" | "replace",
+    embeddedSongs?: Song[]
   ) => Promise<{ success: boolean; id?: string; message?: string }>;
 }
 
@@ -247,8 +248,16 @@ export const SetlistListsProvider: React.FC<{ children: React.ReactNode }> = ({ 
   const importSetlist = async (
     name: string,
     rawItems: { songId: string; customKey: string }[],
-    mode: "new" | "replace"
+    mode: "new" | "replace",
+    embeddedSongs?: Song[]
   ) => {
+    if (Array.isArray(embeddedSongs) && embeddedSongs.length > 0) {
+      for (const s of embeddedSongs) {
+        if (s && s.id && s.title && s.content) {
+          await db.songs.put(s);
+        }
+      }
+    }
     const validItems = rawItems.map((it, idx) => ({
       songId: it.songId,
       customKey: it.customKey,

@@ -12,7 +12,8 @@ import {
   Upload,
   CheckCircle2,
   AlertCircle,
-  FileText
+  FileText,
+  Download
 } from 'lucide-react';
 import { db } from '../db/dexie';
 import { syncSongsWithRemote, softDeleteSong, saveSong } from '../db/sync';
@@ -58,6 +59,49 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const backupInputRef = useRef<HTMLInputElement>(null);
+
+  const handleExportBackup = async () => {
+    const allSongs = await db.songs.toArray();
+    const allSetlists = await db.setlists.toArray();
+    const data = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      songs: allSongs,
+      setlists: allSetlists
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `hinario-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleImportBackup = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+      let count = 0;
+      if (Array.isArray(parsed.songs)) {
+        await db.songs.bulkPut(parsed.songs);
+        count = parsed.songs.length;
+      }
+      if (Array.isArray(parsed.setlists)) {
+        await db.setlists.bulkPut(parsed.setlists);
+      }
+      await loadSongs();
+      setImportStatus(`Backup restaurado! ${count} músicas sincronizadas.`);
+      if (backupInputRef.current) {
+        backupInputRef.current.value = "";
+      }
+    } catch {
+      alert("Arquivo de backup JSON inválido.");
+    }
+  };
 
   const loadSongs = async () => {
     const active = await db.songs.filter((s) => !s.isDeleted).toArray();
@@ -254,6 +298,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           >
             <Plus className="w-4 h-4 text-[#C08552]" />
             <span>Nova Música</span>
+          </button>
+
+          <input
+            ref={backupInputRef}
+            type="file"
+            accept=".json"
+            onChange={handleImportBackup}
+            className="hidden"
+          />
+
+          <button
+            onClick={handleExportBackup}
+            className="flex items-center gap-1.5 h-10 sm:h-11 px-3.5 sm:px-4 rounded-2xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] emil-press"
+            title="Exportar Backup Offline completo (JSON)"
+          >
+            <Download className="w-4 h-4 text-[var(--color-accent)]" />
+            <span className="hidden sm:inline">Exportar Backup</span>
+          </button>
+
+          <button
+            onClick={() => backupInputRef.current?.click()}
+            className="flex items-center gap-1.5 h-10 sm:h-11 px-3.5 sm:px-4 rounded-2xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] emil-press"
+            title="Restaurar Backup Offline completo (JSON)"
+          >
+            <Upload className="w-4 h-4 text-[var(--color-accent)]" />
+            <span className="hidden sm:inline">Restaurar Backup</span>
           </button>
 
           <button
