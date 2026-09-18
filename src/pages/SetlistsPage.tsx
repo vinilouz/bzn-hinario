@@ -314,10 +314,15 @@ export const SetlistsPage: React.FC<SetlistsPageProps> = ({
                     0{index + 1}
                   </span>
                   <div className="min-w-0 flex flex-col justify-center">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                       <h3 className="text-base sm:text-xl font-bold text-[var(--color-text-primary)] hover:text-[var(--color-accent)] truncate leading-tight">
                         {item.song.title}
                       </h3>
+                      {item.song.leader && (
+                        <span className="shrink-0 px-2 py-0.5 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] font-mono text-[10px] sm:text-xs font-semibold leading-none">
+                          {item.song.leader}
+                        </span>
+                      )}
                       {item.song.bpm && (
                         <span className="shrink-0 px-1.5 py-0.5 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] font-mono tnum font-semibold text-[10px] leading-none">
                           {item.song.bpm} BPM

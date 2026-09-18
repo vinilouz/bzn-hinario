@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Copy, Check, QrCode } from "lucide-react";
 import { encodeSetlistToPayload, generateQrDataUrl } from "../services/qrSharing";
-import { db } from "../db/dexie";
+import { getSongById } from "../services/songService";
 import type { Setlist, Song } from "../types";
 
 interface ShareQrModalProps {
@@ -24,7 +24,7 @@ export const ShareQrModal: React.FC<ShareQrModalProps> = ({ isOpen, setlist, onC
         setIsGenerating(true);
         const fullSongs: Song[] = [];
         for (const item of setlist.items) {
-          const s = await db.songs.get(item.songId);
+          const s = await getSongById(item.songId);
           if (s && !s.isDeleted) {
             fullSongs.push(s);
           }

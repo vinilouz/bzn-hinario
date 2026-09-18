@@ -1,6 +1,5 @@
 import Dexie, { type EntityTable } from "dexie";
 import type { Song, Setlist } from "../types";
-import seedData from "./seed-songs.json";
 
 export class HinarioDB extends Dexie {
   songs!: EntityTable<Song, "id">;
@@ -11,6 +10,9 @@ export class HinarioDB extends Dexie {
     this.version(1).stores({
       songs: "id, title, artist, originalKey, isDeleted, updatedAt, deletedAt",
       setlists: "id, name, isDefault, updatedAt"
+    });
+    this.version(2).stores({
+      songs: "id, title, artist, leader, originalKey, isDeleted, updatedAt, deletedAt, isBase"
     });
   }
 }
@@ -43,12 +45,8 @@ export async function initializeDatabase(): Promise<void> {
           }
         }
       } catch {
+        // Ignore legacy db errors
       }
-    }
-
-    const songCount = await db.songs.count();
-    if (songCount === 0 && Array.isArray(seedData) && seedData.length > 0) {
-      await db.songs.bulkPut(seedData as Song[]);
     }
 
     const setlistCount = await db.setlists.count();
@@ -63,6 +61,6 @@ export async function initializeDatabase(): Promise<void> {
       });
     }
   } catch (error) {
-    console.error("Failed to initialize local database:", error);
+    console.error("Failed to initialize database:", error);
   }
 }

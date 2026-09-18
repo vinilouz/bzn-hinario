@@ -7,8 +7,8 @@ import {
   AlertTriangle,
   Clock
 } from 'lucide-react';
-import { db } from '../db/dexie';
-import { restoreSong, hardDeleteSong, purgeExpiredSongs } from '../db/sync';
+import { purgeExpiredSongs } from '../db/sync';
+import { getDeletedSongs, restoreSong, hardDeleteSong } from '../services/songService';
 import type { Song } from '../types';
 
 interface AdminTrashProps {
@@ -21,7 +21,7 @@ export const AdminTrash: React.FC<AdminTrashProps> = ({ onBack }) => {
   const [deletedSongs, setDeletedSongs] = useState<Song[]>([]);
 
   const loadTrash = async () => {
-    const items = await db.songs.filter((s) => s.isDeleted).toArray();
+    const items = await getDeletedSongs();
     setDeletedSongs(items.sort((a, b) => (b.deletedAt || 0) - (a.deletedAt || 0)));
   };
 

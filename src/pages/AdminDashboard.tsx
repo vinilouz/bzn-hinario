@@ -16,10 +16,17 @@ import {
   Download
 } from 'lucide-react';
 import { db } from '../db/dexie';
-import { syncSongsWithRemote, softDeleteSong, saveSong } from '../db/sync';
+import { syncSongsWithRemote } from '../db/sync';
+import {
+  getAllSongs,
+  getDeletedSongs,
+  getSongById,
+  saveSong,
+  softDeleteSong
+} from '../services/songService';
 import { COMMON_KEYS, extractCifraClubKey, cleanCifraClubArtifacts, detectFormat } from '../services/chordEngine';
 import { ChordViewer } from '../components/ChordViewer';
-import type { Song } from '../types';
+import type { Song, SongLeader } from '../types';
 
 interface AdminDashboardProps {
   onNavigateToTrash: () => void;
@@ -34,6 +41,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
+  const [leader, setLeader] = useState<SongLeader>('Igreja');
   const [bpm, setBpm] = useState('');
   const [originalKey, setOriginalKey] = useState('C');
   const [keyMode, setKeyMode] = useState<'auto' | 'manual'>('auto');
@@ -62,10 +70,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const backupInputRef = useRef<HTMLInputElement>(null);
 
   const handleExportBackup = async () => {
-    const allSongs = await db.songs.toArray();
+    const allSongs = await getAllSongs();
     const allSetlists = await db.setlists.toArray();
     const data = {
-      version: 1,
+      version: 2,
       exportedAt: new Date().toISOString(),
       songs: allSongs,
       setlists: allSetlists
@@ -87,7 +95,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const parsed = JSON.parse(text);
       let count = 0;
       if (Array.isArray(parsed.songs)) {
-        await db.songs.bulkPut(parsed.songs);
+        for (const s of parsed.songs) {
+          await saveSong(s);
+        }
         count = parsed.songs.length;
       }
       if (Array.isArray(parsed.setlists)) {
@@ -104,11 +114,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const loadSongs = async () => {
-    const active = await db.songs.filter((s) => !s.isDeleted).toArray();
+    const active = await getAllSongs();
     setSongs(active.sort((a, b) => a.title.localeCompare(b.title, 'pt-BR')));
 
-    const deleted = await db.songs.filter((s) => s.isDeleted).count();
-    setTrashCount(deleted);
+    const deleted = await getDeletedSongs();
+    setTrashCount(deleted.length);
   };
 
   useEffect(() => {
@@ -119,6 +129,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setEditingId(null);
     setTitle('');
     setArtist('');
+    setLeader('Igreja');
     setBpm('');
     setOriginalKey('C');
     setKeyMode('auto');
@@ -128,15 +139,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     setIsEditing(true);
   };
 
-  const handleOpenEdit = (song: Song) => {
-    setEditingId(song.id);
-    setTitle(song.title);
-    setArtist(song.artist || '');
-    setBpm(song.bpm !== undefined ? String(song.bpm) : '');
-    setOriginalKey(song.originalKey);
+  const handleOpenEdit = async (song: Song) => {
+    let fullSong = song;
+    if (!fullSong.content) {
+      const fetched = await getSongById(song.id);
+      if (fetched) fullSong = fetched;
+    }
+    setEditingId(fullSong.id);
+    setTitle(fullSong.title);
+    setArtist(fullSong.artist || '');
+    setLeader(fullSong.leader || 'Igreja');
+    setBpm(fullSong.bpm !== undefined ? String(fullSong.bpm) : '');
+    setOriginalKey(fullSong.originalKey);
     setKeyMode('manual');
-    setFormatMode(song.format);
-    setContent(song.content);
+    setFormatMode(fullSong.format);
+    setContent(fullSong.content || '');
     setShowPreview(false);
     setIsEditing(true);
   };
@@ -150,16 +167,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
     const sanitizedContent = cleanCifraClubArtifacts(content);
     const parsedBpm = bpm.trim() ? parseInt(bpm.trim(), 10) : undefined;
+    const existingSong = editingId ? songs.find((s) => s.id === editingId) : null;
 
     const songData: Song = {
       id: editingId || `song_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
       title: title.trim(),
-      artist: artist.trim() || undefined,
+      artist: artist.trim() || leader,
+      leader: leader || 'Igreja',
+      isBase: existingSong?.isBase ?? false,
       bpm: parsedBpm && !isNaN(parsedBpm) && parsedBpm > 0 ? parsedBpm : undefined,
       originalKey: resolvedKey,
       format: resolvedFormat,
       content: sanitizedContent,
-      createdAt: editingId ? (songs.find((s) => s.id === editingId)?.createdAt || Date.now()) : Date.now(),
+      createdAt: existingSong?.createdAt || Date.now(),
       updatedAt: Date.now(),
       isDeleted: false,
       deletedAt: null
@@ -196,11 +216,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const extractKeyFromText = (text: string): string => {
-    const match = text.match(/tom:\s*([A-G][#b]?m?)/i) || text.match(/\bkey:\s*([A-G][#b]?m?)/i);
-    if (match && match[1]) {
-      const clean = match[1].toUpperCase();
-      if (COMMON_KEYS.includes(clean)) return clean;
-    }
+    const detected = extractCifraClubKey(text);
+    if (detected && COMMON_KEYS.includes(detected)) return detected;
     return 'C';
   };
 
@@ -218,22 +235,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       const file = files[i];
       try {
         const text = await file.text();
-        const rawName = file.name.replace(/\.[^/.]+$/, '').replace(/^[0-9]+[-_\s]*/, '').trim();
+        let detectedLeader: SongLeader = 'Igreja';
+        const prefixMatch = file.name.match(/^([DLMI])\s*[-_]/i);
+        if (prefixMatch) {
+          const p = prefixMatch[1].toUpperCase();
+          if (p === 'D') detectedLeader = 'Doni';
+          else if (p === 'L') detectedLeader = 'Lucas';
+          else if (p === 'M') detectedLeader = 'Magu';
+          else if (p === 'I') detectedLeader = 'Igreja';
+        }
+
+        const rawName = file.name
+          .replace(/\.[^/.]+$/, '')
+          .replace(/^[DLMI]\s*[-_]\s*/i, '')
+          .trim();
         const songTitle = rawName || `Música ${i + 1}`;
         const key = extractKeyFromText(text);
         const detectedBpmMatch = text.match(/(?:bpm|tempo|andamento):\s*(\d{2,3})/i);
         const bpmVal = detectedBpmMatch ? parseInt(detectedBpmMatch[1], 10) : undefined;
         const validBpm = bpmVal && !isNaN(bpmVal) && bpmVal >= 30 && bpmVal <= 300 ? bpmVal : undefined;
 
+        const slug = file.name
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .toLowerCase()
+          .replace(/^[dlmi][-_]/, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '');
+
+        const id = `seed_${detectedLeader.toLowerCase()}_${slug || `song_${now}_${i}`}`;
+
         newSongs.push({
-          id: `song_${now}_${i}_${Math.random().toString(36).slice(2, 6)}`,
+          id,
           title: songTitle,
+          artist: detectedLeader,
+          leader: detectedLeader,
+          isBase: true,
           bpm: validBpm,
           originalKey: key,
           format: text.includes('[') && text.includes(']') ? 'chordpro' : 'chords-over-lyrics',
-          content: text.trim(),
-          createdAt: now,
-          updatedAt: now,
+          content: cleanCifraClubArtifacts(text),
+          createdAt: now + i * 1000,
+          updatedAt: now + i * 1000,
           isDeleted: false,
           deletedAt: null
         });
@@ -243,7 +286,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
 
     if (newSongs.length > 0) {
-      await db.songs.bulkPut(newSongs);
+      for (const s of newSongs) {
+        await saveSong(s);
+      }
       await loadSongs();
       setImportStatus(`Sucesso! ${newSongs.length} músicas importadas para o hinário offline.`);
     } else {
@@ -268,7 +313,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
           <h1 className="text-2xl font-black text-[var(--color-text-primary)] mt-1">Acervo do Hinário</h1>
           <p className="text-xs sm:text-sm text-[var(--color-text-secondary)]">
-            Importe os 395 TXTs da pasta da igreja de uma só vez, edite cifras ou sincronize.
+            Cadastre louvores, edite cifras por líder (Doni, Lucas, Magu, Igreja) ou sincronize com a nuvem.
           </p>
         </div>
 
@@ -309,43 +354,44 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           />
 
           <button
-            onClick={handleExportBackup}
-            className="flex items-center gap-1.5 h-10 sm:h-11 px-3.5 sm:px-4 rounded-2xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] emil-press"
-            title="Exportar Backup Offline completo (JSON)"
-          >
-            <Download className="w-4 h-4 text-[var(--color-accent)]" />
-            <span className="hidden sm:inline">Exportar Backup</span>
-          </button>
-
-          <button
             onClick={() => backupInputRef.current?.click()}
-            className="flex items-center gap-1.5 h-10 sm:h-11 px-3.5 sm:px-4 rounded-2xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] emil-press"
-            title="Restaurar Backup Offline completo (JSON)"
+            className="flex items-center gap-2 h-10 sm:h-11 px-3 sm:px-4 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-xs font-bold emil-press"
+            title="Restaurar backup JSON com músicas e setlists"
           >
-            <Upload className="w-4 h-4 text-[var(--color-accent)]" />
-            <span className="hidden sm:inline">Restaurar Backup</span>
+            <Upload className="w-4 h-4" />
+            <span className="hidden md:inline">Restaurar</span>
           </button>
 
           <button
-            onClick={onNavigateToTrash}
-            className="flex items-center gap-1.5 h-10 sm:h-11 px-3.5 sm:px-4 rounded-2xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] emil-press"
-            title="Lixeira"
+            onClick={handleExportBackup}
+            className="flex items-center gap-2 h-10 sm:h-11 px-3 sm:px-4 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-xs font-bold emil-press"
+            title="Baixar backup JSON com músicas e setlists"
           >
-            <Archive className="w-4 h-4 text-rose-600" />
-            {trashCount > 0 && (
-              <span className="px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-700 text-[10px] font-mono font-bold">
-                {trashCount}
-              </span>
-            )}
+            <Download className="w-4 h-4" />
+            <span className="hidden md:inline">Backup</span>
           </button>
 
           <button
             onClick={handleSync}
             disabled={isSyncing}
-            className="flex items-center gap-1.5 h-10 sm:h-11 px-3.5 sm:px-4 rounded-2xl bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-xs sm:text-sm font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] disabled:opacity-50 emil-press"
-            title="Sincronizar com a nuvem"
+            className="flex items-center gap-2 h-10 sm:h-11 px-4 sm:px-5 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-xs sm:text-sm font-bold disabled:opacity-50 emil-press shadow-sm"
           >
-            <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin text-[#C08552]' : ''}`} />
+            <RefreshCw className={`w-4 h-4 text-[#C08552] ${isSyncing ? 'animate-spin' : ''}`} />
+            <span>{isSyncing ? 'Sincronizando...' : 'Nuvem'}</span>
+          </button>
+
+          <button
+            onClick={onNavigateToTrash}
+            className="flex items-center gap-2 h-10 sm:h-11 px-3 sm:px-4 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/25 hover:bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] text-xs sm:text-sm font-bold emil-press shadow-sm relative"
+            title="Ver lixeira"
+          >
+            <Archive className="w-4 h-4 text-amber-500" />
+            <span>Lixeira</span>
+            {trashCount > 0 && (
+              <span className="px-1.5 py-0.5 rounded-full bg-rose-500 text-white font-mono text-[10px] font-black">
+                {trashCount}
+              </span>
+            )}
           </button>
         </div>
       </div>
@@ -395,7 +441,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <form onSubmit={handleSave} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-12 gap-4">
-                <div className="sm:col-span-6 space-y-1.5">
+                <div className="sm:col-span-5 space-y-1.5">
                   <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
                     Título da Música *
                   </label>
@@ -409,22 +455,38 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   />
                 </div>
 
-                <div className="sm:col-span-4 space-y-1.5">
+                <div className="sm:col-span-3 space-y-1.5">
                   <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    Artista / Ministério (Opcional)
+                    Líder / Ministro *
+                  </label>
+                  <select
+                    value={leader}
+                    onChange={(e) => setLeader(e.target.value as SongLeader)}
+                    className="w-full px-3.5 py-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 rounded-2xl text-base sm:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] font-bold"
+                  >
+                    <option value="Igreja">Igreja</option>
+                    <option value="Doni">Doni</option>
+                    <option value="Lucas">Lucas</option>
+                    <option value="Magu">Magu</option>
+                  </select>
+                </div>
+
+                <div className="sm:col-span-2 space-y-1.5">
+                  <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    Artista / Banda
                   </label>
                   <input
                     type="text"
                     value={artist}
                     onChange={(e) => setArtist(e.target.value)}
-                    placeholder="Ex: Isaías Saad"
+                    placeholder="Opcional"
                     className="w-full px-3.5 py-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 rounded-2xl text-base sm:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
                   />
                 </div>
 
                 <div className="sm:col-span-2 space-y-1.5">
                   <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
-                    BPM (Opcional)
+                    BPM
                   </label>
                   <input
                     type="number"
@@ -453,39 +515,30 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         setOriginalKey(e.target.value);
                       }
                     }}
-                    className="w-full px-3.5 py-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 rounded-2xl text-base sm:text-sm text-[var(--color-text-primary)] font-mono font-bold focus:outline-none focus:border-[var(--color-accent)]"
+                    className="w-full px-3.5 py-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 rounded-2xl text-base sm:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)] font-mono font-bold"
                   >
                     <option value="auto">
-                      {detectedKey ? `Auto: Detectado (${detectedKey})` : 'Auto: Detectar do Texto'}
+                      Auto-detectar {detectedKey ? `(${detectedKey})` : '(Tom: C / 1º acorde)'}
                     </option>
-                    <optgroup label="Seleção Manual (Fallback)">
-                      {COMMON_KEYS.map((k) => (
-                        <option key={k} value={k}>
-                          {k}
-                        </option>
-                      ))}
-                    </optgroup>
+                    {COMMON_KEYS.map((k) => (
+                      <option key={k} value={k}>
+                        {k}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
-                      Formato de Cifra
-                    </label>
-                    {formatMode === 'auto' && (
-                      <span className="text-[10px] font-mono text-[var(--color-accent)] font-semibold">
-                        Auto: {detectedFormat === 'chordpro' ? 'ChordPro' : 'Duas Linhas'}
-                      </span>
-                    )}
-                  </div>
+                  <label className="text-xs font-bold text-[var(--color-text-secondary)] uppercase tracking-wider">
+                    Formato da Cifra
+                  </label>
                   <select
                     value={formatMode}
                     onChange={(e) => setFormatMode(e.target.value as any)}
                     className="w-full px-3.5 py-2.5 bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 rounded-2xl text-base sm:text-sm text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-accent)]"
                   >
-                    <option value="auto">Auto (Detectar Cifra Club / TXT / ChordPro)</option>
-                    <option value="chords-over-lyrics">Manual: Duas Linhas (Acordes acima da letra)</option>
+                    <option value="auto">Auto-detectar ({detectedFormat})</option>
+                    <option value="chords-over-lyrics">Padrão: Cifras sobre letra (Cifra Club)</option>
                     <option value="chordpro">Manual: ChordPro ([C]Acordes entre colchetes)</option>
                   </select>
                 </div>
@@ -550,6 +603,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       id: 'preview',
                       title,
                       artist,
+                      leader,
                       bpm: bpm.trim() ? parseInt(bpm.trim(), 10) : undefined,
                       originalKey: resolvedKey,
                       format: resolvedFormat,
@@ -606,18 +660,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 className="p-3.5 sm:p-4 flex items-center justify-between gap-4 hover:bg-[var(--color-bg-subtle)]/60 transition-colors"
               >
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-base sm:text-lg font-bold text-[var(--color-text-primary)] truncate">{song.title}</h3>
-                    <span className="px-2 py-0.5 rounded-md bg-[var(--color-accent)]/15 border border-[#C08552]/30 text-[#C08552] font-mono font-bold text-xs sm:text-sm px-2.5 py-1">
+                    <span className="px-2 py-0.5 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] font-mono text-[11px] font-bold">
+                      {song.leader || 'Igreja'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-md bg-[var(--color-accent)]/15 border border-[#C08552]/30 text-[#C08552] font-mono font-bold text-xs sm:text-sm">
                       {song.originalKey}
                     </span>
                     {song.bpm && (
-                      <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 text-[var(--color-text-secondary)] font-mono font-bold text-xs sm:text-sm px-2.5 py-1">
+                      <span className="px-2 py-0.5 rounded-md bg-[var(--color-bg-subtle)] border border-[var(--color-border)]/30 text-[var(--color-text-secondary)] font-mono font-bold text-xs sm:text-sm">
                         {song.bpm} BPM
                       </span>
                     )}
                   </div>
-                  {song.artist && (
+                  {song.artist && song.artist !== (song.leader || 'Igreja') && (
                     <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] truncate mt-1">{song.artist}</p>
                   )}
                 </div>

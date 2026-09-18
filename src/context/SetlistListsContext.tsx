@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { db } from "../db/dexie";
+import { getSongById, saveSong } from "../services/songService";
 import { transposeKeyName } from "../services/chordEngine";
 import type { Setlist, SetlistItemWithSong, Song } from "../types";
 
@@ -66,7 +67,7 @@ export const SetlistListsProvider: React.FC<{ children: React.ReactNode }> = ({ 
         const sortedItems = [...active.items].sort((a, b) => a.order - b.order);
 
         for (const it of sortedItems) {
-          const song = await db.songs.get(it.songId);
+          const song = await getSongById(it.songId);
           if (song && !song.isDeleted) {
             fullItems.push({
               songId: it.songId,
@@ -254,7 +255,7 @@ export const SetlistListsProvider: React.FC<{ children: React.ReactNode }> = ({ 
     if (Array.isArray(embeddedSongs) && embeddedSongs.length > 0) {
       for (const s of embeddedSongs) {
         if (s && s.id && s.title && s.content) {
-          await db.songs.put(s);
+          await saveSong(s);
         }
       }
     }

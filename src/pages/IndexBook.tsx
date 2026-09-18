@@ -1,9 +1,9 @@
 import { useDragScroll } from "../hooks/useDragScroll";
 import React, { useState, useEffect, useMemo } from "react";
-import { Search, BookOpen, Star, X, Music } from "lucide-react";
-import { db } from "../db/dexie";
+import { Search, BookOpen, Star, X, Music, UserCheck } from "lucide-react";
+import { getAllSongs } from "../services/songService";
 import { useSetlists } from "../context/SetlistListsContext";
-import type { Song } from "../types";
+import type { Song, SongLeader } from "../types";
 
 interface IndexBookProps {
   onOpenSong: (songId: string, fromTab: "index" | "setlists") => void;
@@ -11,24 +11,51 @@ interface IndexBookProps {
 
 const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#".split("");
 
+const LEADERS: { id: string; label: string }[] = [
+  { id: "all", label: "Todas" },
+  { id: "Igreja", label: "Igreja" },
+  { id: "Doni", label: "Doni" },
+  { id: "Lucas", label: "Lucas" },
+  { id: "Magu", label: "Magu" }
+];
+
 export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
   const { isSongInActiveSetlist, toggleSongInActiveSetlist, activeSetlist, setlists, setActiveSetlistId } = useSetlists();
   const [songs, setSongs] = useState<Song[]>([]);
   const [query, setQuery] = useState("");
   const [selectedLetter, setSelectedLetter] = useState<string | null>(null);
+  const [selectedLeader, setSelectedLeader] = useState<string>("all");
   const { ref: alphabetRef, handleClickCapture } = useDragScroll<HTMLDivElement>();
 
   useEffect(() => {
-    db.songs
-      .filter((s) => !s.isDeleted)
-      .toArray()
-      .then((data) => {
-        setSongs(data.sort((a, b) => a.title.localeCompare(b.title, "pt-BR")));
-      });
+    getAllSongs().then((data) => {
+      setSongs(data.sort((a, b) => a.title.localeCompare(b.title, "pt-BR")));
+    });
   }, []);
+
+  const leaderCounts = useMemo(() => {
+    const counts: Record<string, number> = {
+      all: songs.length,
+      Igreja: 0,
+      Doni: 0,
+      Lucas: 0,
+      Magu: 0
+    };
+    for (const s of songs) {
+      const l = s.leader || "Igreja";
+      if (counts[l] !== undefined) {
+        counts[l]++;
+      }
+    }
+    return counts;
+  }, [songs]);
 
   const filteredSongs = useMemo(() => {
     let result = songs;
+
+    if (selectedLeader !== "all") {
+      result = result.filter((s) => (s.leader || "Igreja") === selectedLeader);
+    }
 
     if (selectedLetter) {
       if (selectedLetter === "#") {
@@ -45,13 +72,28 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
       result = result.filter((s) => {
         const inTitle = s.title.toLowerCase().includes(q);
         const inArtist = s.artist?.toLowerCase().includes(q);
-        const inLyrics = s.content.toLowerCase().includes(q);
-        return inTitle || inArtist || inLyrics;
+        const inLeader = s.leader?.toLowerCase().includes(q);
+        const inLyrics = s.content ? s.content.toLowerCase().includes(q) : false;
+        return inTitle || inArtist || inLeader || inLyrics;
       });
     }
 
     return result;
-  }, [songs, query, selectedLetter]);
+  }, [songs, selectedLeader, query, selectedLetter]);
+
+  const getLeaderBadgeStyle = (leader?: SongLeader) => {
+    switch (leader) {
+      case "Doni":
+        return "bg-amber-500/15 border-amber-500/30 text-amber-600 dark:text-amber-400";
+      case "Lucas":
+        return "bg-emerald-500/15 border-emerald-500/30 text-emerald-600 dark:text-emerald-400";
+      case "Magu":
+        return "bg-purple-500/15 border-purple-500/30 text-purple-600 dark:text-purple-400";
+      case "Igreja":
+      default:
+        return "bg-[var(--color-bg-subtle)] border-[var(--color-border-subtle)] text-[var(--color-text-secondary)]";
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-5 sm:py-7 space-y-5 animate-ui-fade">
@@ -101,7 +143,7 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
                 setQuery(e.target.value);
                 if (selectedLetter) setSelectedLetter(null);
               }}
-              placeholder="Buscar título, artista ou letra..."
+              placeholder="Buscar título, líder, artista..."
               className="w-full h-11 sm:h-12 pl-11 pr-10 bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] rounded-full text-base sm:text-lg text-[var(--color-text-primary)] placeholder-[var(--color-text-secondary)] focus:outline-none focus:border-[var(--color-accent)] focus:ring-2 focus:ring-[var(--color-accent)]/15"
             />
             {query && (
@@ -117,38 +159,73 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
         </div>
       </div>
 
-      {/* Alphabet Scrubber */}
-      <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
-        <div
-          ref={alphabetRef}
-          onClickCapture={handleClickCapture}
-          className="flex items-center gap-1.5 horizontal-touch-scroll py-1 px-1 scrollbar-none apple-scroll-mask apple-scroll-mask-sm-none select-none"
-        >
-          <button
-            onClick={() => setSelectedLetter(null)}
-            className={`h-8 sm:h-9 px-3 sm:px-3.5 flex items-center justify-center rounded-xl sm:rounded-full text-xs sm:text-sm font-bold shrink-0 emil-press ${selectedLetter === null
-                ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] shadow-sm font-bold"
-                : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)]"
-              }`}
+      {/* Leader Filters & Alphabet Scrubber */}
+      <div className="space-y-2.5">
+        {/* Leader Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none select-none">
+          {LEADERS.map((leader) => {
+            const count = leaderCounts[leader.id] ?? 0;
+            const isSelected = selectedLeader === leader.id;
+            return (
+              <button
+                key={leader.id}
+                onClick={() => {
+                  setSelectedLeader(leader.id);
+                  if (selectedLetter) setSelectedLetter(null);
+                }}
+                className={`h-9 sm:h-10 px-3.5 sm:px-4 flex items-center gap-1.5 rounded-full text-xs sm:text-sm font-bold shrink-0 emil-press border transition-all ${
+                  isSelected
+                    ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] border-[var(--color-accent)] shadow-sm"
+                    : "bg-[var(--color-bg-card)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-subtle)]"
+                }`}
+              >
+                {leader.id !== "all" && <UserCheck className="w-3.5 h-3.5 opacity-80" />}
+                <span>{leader.label}</span>
+                <span className={`text-[11px] font-mono px-1.5 py-0.2 rounded-full ${
+                  isSelected ? "bg-black/20 text-white" : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)]"
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Alphabet Scrubber */}
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0">
+          <div
+            ref={alphabetRef}
+            onClickCapture={handleClickCapture}
+            className="flex items-center gap-1.5 horizontal-touch-scroll py-1 px-1 scrollbar-none apple-scroll-mask apple-scroll-mask-sm-none select-none"
           >
-            Todas
-          </button>
-          {ALPHABET.map((letter) => (
             <button
-              key={letter}
-              onClick={() => {
-                setSelectedLetter(letter === selectedLetter ? null : letter);
-                setQuery("");
-              }}
-              className={`w-8 sm:w-9 h-8 sm:h-9 flex items-center justify-center rounded-xl sm:rounded-full text-xs sm:text-sm font-bold shrink-0 emil-press ${selectedLetter === letter
+              onClick={() => setSelectedLetter(null)}
+              className={`h-8 sm:h-9 px-3 sm:px-3.5 flex items-center justify-center rounded-xl sm:rounded-full text-xs sm:text-sm font-bold shrink-0 emil-press ${
+                selectedLetter === null
                   ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] shadow-sm font-bold"
                   : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)]"
-                }`}
+              }`}
             >
-              {letter}
+              Todas
             </button>
-          ))}
-          <div className="w-4 shrink-0" aria-hidden="true" />
+            {ALPHABET.map((letter) => (
+              <button
+                key={letter}
+                onClick={() => {
+                  setSelectedLetter(letter === selectedLetter ? null : letter);
+                  setQuery("");
+                }}
+                className={`w-8 sm:w-9 h-8 sm:h-9 flex items-center justify-center rounded-xl sm:rounded-full text-xs sm:text-sm font-bold shrink-0 emil-press ${
+                  selectedLetter === letter
+                    ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] shadow-sm font-bold"
+                    : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] border border-[var(--color-border-subtle)]"
+                }`}
+              >
+                {letter}
+              </button>
+            ))}
+            <div className="w-4 shrink-0" aria-hidden="true" />
+          </div>
         </div>
       </div>
 
@@ -157,11 +234,12 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
         {filteredSongs.length === 0 ? (
           <div className="p-12 text-center text-[var(--color-text-secondary)] text-sm space-y-2">
             <Music className="w-8 h-8 mx-auto opacity-40 text-[var(--color-accent)]" />
-            <p>Nenhuma música encontrada com os termos buscados.</p>
+            <p>Nenhuma música encontrada com os filtros buscados.</p>
           </div>
         ) : (
           filteredSongs.map((song) => {
             const starred = isSongInActiveSetlist(song.id);
+            const leader = song.leader || "Igreja";
             return (
               <div
                 key={song.id}
@@ -169,10 +247,13 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
                 onClick={() => onOpenSong(song.id, "index")}
               >
                 <div className="min-w-0 pr-4 flex-1 flex flex-col justify-center">
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
                     <h2 className="text-base sm:text-xl font-bold text-[var(--color-text-primary)] group-hover:text-[var(--color-accent)] truncate leading-tight">
                       {song.title}
                     </h2>
+                    <span className={`shrink-0 px-2 py-0.5 rounded-full border font-mono tnum font-semibold text-[11px] sm:text-xs leading-none ${getLeaderBadgeStyle(song.leader)}`}>
+                      {leader}
+                    </span>
                     <span className="shrink-0 px-2 py-0.5 rounded-full bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/30 text-[var(--color-accent)] font-mono tnum font-bold text-xs sm:text-sm leading-none">
                       {song.originalKey}
                     </span>
@@ -182,8 +263,10 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
                       </span>
                     )}
                   </div>
-                  {song.artist && (
-                    <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] truncate leading-none mt-1">{song.artist}</p>
+                  {song.artist && song.artist !== leader && (
+                    <p className="text-xs sm:text-sm text-[var(--color-text-secondary)] truncate leading-none mt-1">
+                      {song.artist}
+                    </p>
                   )}
                 </div>
 
@@ -194,10 +277,11 @@ export const IndexBook: React.FC<IndexBookProps> = ({ onOpenSong }) => {
                       toggleSongInActiveSetlist(song);
                     }}
                     title={starred ? `Remover de ${activeSetlist?.name}` : `Adicionar em ${activeSetlist?.name}`}
-                    className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full border emil-press ${starred
+                    className={`w-10 h-10 sm:w-11 sm:h-11 flex items-center justify-center rounded-full border emil-press ${
+                      starred
                         ? "bg-[var(--color-accent)] text-[var(--color-accent-contrast)] border-[var(--color-accent)] shadow-sm"
                         : "bg-[var(--color-bg-subtle)] text-[var(--color-text-secondary)] hover:text-[var(--color-accent)] border border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-card)]"
-                      }`}
+                    }`}
                   >
                     <Star className={`w-4 h-4 sm:w-5 sm:h-5 shrink-0 ${starred ? "fill-current" : ""}`} />
                   </button>

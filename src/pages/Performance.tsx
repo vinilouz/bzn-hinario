@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { useSetlists } from "../context/SetlistListsContext";
 import { useTheme } from "../context/ThemeContext";
-import { db } from "../db/dexie";
+import { getSongById } from "../services/songService";
 import { transposeKeyName } from "../services/chordEngine";
 import { ChordViewer } from "../components/ChordViewer";
 import { BottomNavBar } from "../components/BottomNavBar";
@@ -72,7 +72,7 @@ export const Performance: React.FC<PerformanceProps> = ({
       return;
     }
 
-    db.songs.get(initialSongId).then((song) => {
+    getSongById(initialSongId).then((song) => {
       if (song) {
         setCurrentSong(song);
         setCurrentKey(song.originalKey);
@@ -291,17 +291,17 @@ export const Performance: React.FC<PerformanceProps> = ({
                   {currentSong.title}
                 </h1>
               </div>
-              {(currentSong.artist || currentSong.bpm) && (
+              {(currentSong.artist || currentSong.bpm || currentSong.leader) && (
                 <div className="flex items-center gap-2 mt-0.5 min-w-0">
-                  {currentSong.artist && (
+                  {currentSong.leader && (
+                    <span className="text-[10px] sm:text-[11px] font-mono font-semibold px-1.5 py-0.2 rounded bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-[var(--color-text-secondary)] shrink-0 leading-none">
+                      {currentSong.leader}
+                    </span>
+                  )}
+                  {currentSong.artist && currentSong.artist !== currentSong.leader && (
                     <p className="text-[11px] sm:text-xs text-[var(--color-text-secondary)] truncate leading-none">
                       {currentSong.artist}
                     </p>
-                  )}
-                  {currentSong.artist && currentSong.bpm && (
-                    <span className="text-[10px] text-[var(--color-text-secondary)] opacity-40 leading-none select-none">
-                      •
-                    </span>
                   )}
                   {currentSong.bpm && (
                     <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-mono font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/30 px-1.5 py-0.5 rounded leading-none shrink-0">
@@ -369,16 +369,18 @@ export const Performance: React.FC<PerformanceProps> = ({
 
       {/* Main Reader View */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {(currentSong.artist || currentSong.bpm) && (
+        {(currentSong.artist || currentSong.bpm || currentSong.leader) && (
           <div className="mb-4 pb-3 border-b border-[var(--color-border-subtle)] flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap">
-              {currentSong.artist && (
+              {currentSong.leader && (
+                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full bg-[var(--color-bg-subtle)] border border-[var(--color-border-subtle)] text-xs font-mono font-bold text-[var(--color-text-secondary)]">
+                  {currentSong.leader}
+                </span>
+              )}
+              {currentSong.artist && currentSong.artist !== currentSong.leader && (
                 <span className="text-sm sm:text-base font-bold text-[var(--color-text-secondary)]">
                   {currentSong.artist}
                 </span>
-              )}
-              {currentSong.artist && currentSong.bpm && (
-                <span className="text-xs text-[var(--color-text-secondary)] opacity-30 select-none">•</span>
               )}
               {currentSong.bpm && (
                 <span className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-mono font-bold text-[var(--color-accent)] bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/30 px-3 py-1 rounded-full">

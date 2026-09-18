@@ -1,11 +1,15 @@
+export type SongLeader = "Doni" | "Lucas" | "Magu" | "Igreja" | string;
+
 export interface Song {
   id: string;
   title: string;
   artist?: string;
+  leader?: SongLeader;
+  isBase?: boolean;
   bpm?: number;
   originalKey: string;
   content: string;
-  format: 'chords-over-lyrics' | 'chordpro';
+  format: "chords-over-lyrics" | "chordpro";
   createdAt: number;
   updatedAt: number;
   isDeleted: boolean;
@@ -43,6 +47,6 @@ export interface QrSetlistPayload {
 
 export interface AppConfig {
   trashRetentionDays: number;
-  theme: 'dark' | 'light';
+  theme: "dark" | "light";
   fontSize: number;
 }
